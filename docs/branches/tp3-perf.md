@@ -1,0 +1,47 @@
+# Branch: tp3-perf
+
+## Business context
+
+A kit of three Sparks cabled as a triangle has no supported start in this recipe, and the same three Sparks run the
+lab's older Python-engine recipe much faster. This branch makes TP=3 a supported start that is faster than TP=2 and on
+a par with the Python engine. The goals, causes, gates and task list are in `epic/README.md`; `epic/HANDOFF.md` says
+where things stand.
+
+## What changed
+
+- `./start-tp3.sh` and `./stop-tp3.sh` over the four-Spark ring launcher at `TP=3`.
+- Engine patches 0122 (`TF_GLM_KDA_PAD`), 0123 (`TF_GLM_ROCE_MULTI`) and 0124 (`TF_GLM_SAMPLE_ROOT`), each off by
+  default and passed by the start at `TP=3` only.
+- `epic/`: the plan, the task files, the devbox handoff and the runbook for rank 0's Spark.
+- `scripts/tests/tp3-config.sh` runs in a sandbox without `scripts/local.sh`, so a kit's local settings no longer
+  change the defaults it checks.
+
+## Business rules and constraints
+
+- `./start.sh` (the production pair) is not modified; TP=2 and TP=4 behave as before with every switch unset.
+- The three Sparks serve production: every measurement session is a maintenance window agreed beforehand.
+- No kit-private details (addresses, users, host names) in committed files.
+
+## Edge cases handled
+
+- `tp3-config.sh` on a kit: rank 0's `local.sh` set `NCCL_CHANNELS=8`, which made the four-Spark default check read 8
+  instead of 4. The sandbox copies `scripts/` without `local.sh` and links the rest of the repository.
+
+## Integration impact
+
+- None on the pair or on four Sparks while the TP=3 switches are unset.
+
+## Out of scope and follow-ups
+
+- Every measurement: the first maintenance window (`epic/DGX-AGENT.md`, task 03).
+- The window's measurement tooling at TP=3 (port from `local.sh`, Structured and prose, prefill ladder, per-rank
+  profile): planned, not started.
+
+## Verification
+
+- `bash scripts/tests/run.sh` passes on rank 0's Spark with its `local.sh` present (it failed there before the fix).
+- `.refract/bin/validate` passes.
+
+## Changelog
+
+- fix(tests): `tp3-config.sh` runs in a sandbox without `scripts/local.sh`, so it passes on a kit.

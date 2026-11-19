@@ -6,6 +6,14 @@
 # scripts/local.sh and .env cannot change them.
 set -euo pipefail
 cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.."
+# scripts/config.sh sources scripts/local.sh, so on a kit (rank 0 holds one) its values would leak into the defaults.
+# Run in a sandbox: the repo's top level linked, scripts/ copied without local.sh, and no .env.
+box=$(mktemp -d)
+trap 'rm -rf -- "$box"' EXIT
+for e in * .[!.]*; do [[ "$e" == scripts || "$e" == .env || "$e" == .git ]] || ln -s "$PWD/$e" "$box/$e"; done
+mkdir "$box/scripts"
+for e in scripts/*; do [[ "$e" == scripts/local.sh ]] || cp -a -- "$e" "$box/scripts/"; done
+cd -- "$box"
 fails=0
 check() { # check <name> <want: accepted|refused:<text the refusal holds>> [VAR=value]...
   local name=$1 want=$2 err rc got

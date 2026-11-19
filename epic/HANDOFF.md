@@ -1,5 +1,7 @@
 # Handoff: TP=3 epic, for the agent resuming on a devbox
 
+**On rank 0's Spark? Read [DGX-AGENT.md](DGX-AGENT.md) first: the window's runbook.**
+
 Written 2026-11-19 at the end of the planning session; updated the same day after the first devbox session (x86_64,
 4 cores, no GPU): tasks 01, 02 and 04 done, patch 0122 written and host-tested. Read `epic/README.md` first (goals, causes, gates), then the task
 files in `epic/tasks/`. This file says where things stand and how to resume.
@@ -8,8 +10,8 @@ files in `epic/tasks/`. This file says where things stand and how to resume.
 
 | Item | State |
 | --- | --- |
-| Recipe branch | `tp3-perf` on the fork `piresbruno/GLM-5.3-Flash-DGX-Sparks-1104` (upstream `MiaAI-Lab/GLM-5.3-Flash-DGX-Sparks-1104`, where the user has read access only). Cut from `main` at `80be4d6`. Holds `epic/`, the TP=3 launcher and patch 0122 |
-| Engine tree | Not on any remote. TensorFold `f350cd3e` plus `patches/engine/*.patch`, rebuilt exactly by `epic/engine-worktree.sh`: tree `e32afdf2d130...` at `recipe-0121`, `dadae63bfc7d...` at `recipe-0122` (checked from upstream) |
+| Recipe branch | `tp3-perf` on the fork `piresbruno/GLM-5.3-Flash-DGX-Sparks-1104` (upstream `MiaAI-Lab/GLM-5.3-Flash-DGX-Sparks-1104`, where the user has read access only). Cut from `main` at `80be4d6`. Holds `epic/`, the TP=3 launcher and patches 0122-0124 |
+| Engine tree | Not on any remote. TensorFold `f350cd3e` plus `patches/engine/*.patch`, rebuilt exactly by `epic/engine-worktree.sh`: tree `e32afdf2d130...` at `recipe-0121`, `dadae63bfc7d...` at `recipe-0122`, `463f5a6660f0...` at `recipe-0124` (checked from upstream) |
 | Task 04 | Done. Host tests at `recipe-0121` already fail 4 + 1 crash (stale tests, listed in the task file): that list is the baseline, not a regression |
 | Tasks 01, 02 | Done off the Sparks; `bash scripts/tests/run.sh` passes. The kit's `DRY_RUN=1 ./start-tp3.sh` and first LIVE wait for the window |
 | Task 05 | Patch 0122 (`TF_GLM_KDA_PAD`) written, recipe-only `chainSegs` stride bug fixed and covered; host tests = baseline. `KDA_PAD=0` by default. GPU checks to do |
@@ -45,7 +47,7 @@ About 7-10 minutes on 4 cores. Compare the failure list with task 04's baseline.
 
 1. **GPU checks of 0122** if a Blackwell GPU is at hand (`tf-cuda-test glm-kda-pad-split`, then `glm-shared-check`,
    `glm-pair-check`, `glm-lanes-concurrent` at world 3); otherwise in the window.
-3. Then ask the user for the task 03 window: `DRY_RUN=1 ./start-tp3.sh` on the kit first, then the baselines, then
+2. Then ask the user for the task 03 window: `DRY_RUN=1 ./start-tp3.sh` on the kit first, then the baselines, then
    0122 with `KDA_PAD=1`, then 0123 (`ROCE_MULTI=1`, `tf-tp-test suite` on the triangle first) and 0124
    (`SAMPLE_ROOT=1`, a fixed seed equal off and on). The clean-build "no compiler warning" check is the image build on rank 0 there.
 

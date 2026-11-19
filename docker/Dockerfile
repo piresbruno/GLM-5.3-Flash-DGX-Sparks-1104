@@ -115,6 +115,14 @@ ARG STRIP=false
 # tf-tp-watch-check. It costs ~4 more minutes (tf-cuda-test is the longest Zig compile).
 ARG TOOLS=1
 ARG PREFIX=/opt/tensorfold
+# fabric/tp's mailbox kernel for TF_GLM_ROCE_MULTI=1 (engine patch 0123; three ranks or more), built before the Zig
+# build: the server loads it from TF_TP_KERNEL_IMAGE, and `zig build install` embeds the same file in tf-tp-test
+# (-Dtp-fatbin), whose `suite` on TF_COMM_BACKEND=roce refuses to run without one. The flags are zig/build/tp.zig's.
+RUN mkdir -p "${PREFIX}/lib" \
+ && /usr/local/cuda/bin/nvcc -fatbin -O3 -std=c++17 -gencode=arch=compute_120,code=sm_120 \
+      -gencode=arch=compute_121,code=sm_121 -gencode=arch=compute_90,code=compute_90 \
+      -o "${PREFIX}/lib/tp_mailbox.fatbin" zig/src/fabric/tp/mailbox.cu \
+ && ls -l "${PREFIX}/lib/tp_mailbox.fatbin"
 # Every build compiles all kernels and executables again: upstream's build runs `nvcc --version` as a side-effect step
 # whose output feeds every fatbin's cache key, so Zig's cache never hits across invocations. Only Zig's global cache
 # (build runner, compiler_rt, libc++) is kept between builds, in a BuildKit cache mount.
@@ -125,17 +133,10 @@ RUN --mount=type=cache,id=tensorfold-zig-global,target=/root/.cache/zig \
  && start=${SECONDS} \
  && zig build ${steps} --prefix "${PREFIX}" --summary failures \
       ${ZIG_JOBS:+-j${ZIG_JOBS}} -Doptimize=fast -Dcpu="${ZIG_CPU}" -Dstrip="${STRIP}" \
-      -Dnvcc=/usr/local/cuda/bin/nvcc -Dsm="${SM}" -Dxgrammar=/src/xgrammar \
+      -Dnvcc=/usr/local/cuda/bin/nvcc -Dsm="${SM}" -Dxgrammar=/src/xgrammar -Dtp-fatbin="${PREFIX}/lib/tp_mailbox.fatbin" \
  && echo "zig build ${steps}: $((SECONDS - start)) s" \
  && rm -f "${PREFIX}"/bin/tf-qwen35-* \
  && "${PREFIX}/native/bin/tensorfold-native" --version
-# fabric/tp's mailbox kernel for TF_GLM_ROCE_MULTI=1 (engine patch 0123; three ranks or more): `zig build install` only
-# embeds it in tf-tp-test, and the server loads it from TF_TP_KERNEL_IMAGE. The flags are zig/build/tp.zig's.
-RUN mkdir -p "${PREFIX}/lib" \
- && /usr/local/cuda/bin/nvcc -fatbin -O3 -std=c++17 -gencode=arch=compute_120,code=sm_120 \
-      -gencode=arch=compute_121,code=sm_121 -gencode=arch=compute_90,code=compute_90 \
-      -o "${PREFIX}/lib/tp_mailbox.fatbin" zig/src/fabric/tp/mailbox.cu \
- && ls -l "${PREFIX}/lib/tp_mailbox.fatbin"
 
 COPY --from=codecs /codecs/lib/ ${PREFIX}/native/lib/
 COPY --from=codecs /codecs/LICENSES/ ${PREFIX}/LICENSES/

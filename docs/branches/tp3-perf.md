@@ -17,6 +17,8 @@ where things stand.
   change the defaults it checks.
 - `./start-tp3.sh` reaches rank 1 again in its weights step: `tp4_prepare_worker_weights` read every worker's ssh
   target before declaring the `local WORKER` that nodes.sh's helpers read (`scripts/tests/tp3-worker-weights.sh`).
+- The image's `tf-tp-test` embeds fabric/tp's mailbox kernel (`-Dtp-fatbin`, the same `tp_mailbox.fatbin` the server
+  loads for `ROCE_MULTI=1`), so `tf-tp-test suite` runs on `TF_COMM_BACKEND=roce`. New image tag.
 
 ## Business rules and constraints
 
@@ -31,6 +33,10 @@ where things stand.
 - The first `DRY_RUN=1 ./start-tp3.sh` on the kit stopped after the links with `!v: unbound variable`: a `local WORKER`
   shadowed `scripts/local.sh`'s value while `wtarget 1` read it by name (bash's dynamic scope). Rank 2 (`WORKER2`) was
   unaffected; every `WORKER_WEIGHTS` mode hit it. Fixed, and covered for rsync, rsync with `DRY_RUN=1`, and check.
+
+- `tf-tp-test suite` at world 3 stopped on every rank with "needs the mailbox kernel": `zig build install` embeds it
+  only when given `-Dtp-nvcc` or `-Dtp-fatbin`, and the Dockerfile built the fatbin after the Zig build, for the
+  server only. On the kit after the fix: 402/402/328 checks pass, every RoCE result exact against NCCL.
 
 ## Integration impact
 
@@ -49,5 +55,6 @@ where things stand.
 
 ## Changelog
 
+- fix(docker): `tf-tp-test` embeds the mailbox kernel the server loads, so its RoCE suite runs at TP=3.
 - fix(tp3): `./start-tp3.sh`'s weights step reads rank 1's ssh target before the local `WORKER` shadows it.
 - fix(tests): `tp3-config.sh` runs in a sandbox without `scripts/local.sh`, so it passes on a kit.

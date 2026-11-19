@@ -2,10 +2,10 @@
 # The recipe's checks that need no Spark: every script parses, shellcheck when it is installed, and the tests here.
 set -euo pipefail
 cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.."
-bash -n start.sh stop.sh scripts/*.sh scripts/tests/*.sh
+bash -n start.sh stop.sh start-tp3.sh stop-tp3.sh start-tp4.sh start-tp4-switchless.sh stop-tp4.sh scripts/*.sh scripts/tests/*.sh
 echo 'syntax: pass'
 if command -v shellcheck >/dev/null; then
-  shellcheck -x start.sh stop.sh scripts/*.sh scripts/tests/*.sh && echo 'shellcheck: pass'
+  shellcheck -x start.sh stop.sh start-tp3.sh stop-tp3.sh start-tp4.sh start-tp4-switchless.sh stop-tp4.sh scripts/*.sh scripts/tests/*.sh && echo 'shellcheck: pass'
 else
   echo 'shellcheck: not installed, skipped'
 fi

@@ -1,6 +1,8 @@
-# Four Sparks at TP=4 (./start-tp4-switchless.sh on a ring of cables, ./start-tp4.sh on a switch, ./stop-tp4.sh for
-# both): reaching the three workers, finding the links and the RDMA devices each runs on (on a ring, NCCL's ring graphs
-# too), and the image and the weights on every Spark. FABRIC_EXPECT (ring or mesh) is set by the start script.
+# Three or four Sparks (TP from the start script): four at TP=4 (./start-tp4-switchless.sh on a ring of cables,
+# ./start-tp4.sh on a switch, ./stop-tp4.sh for both), three at TP=3 (./start-tp3.sh and ./stop-tp3.sh, on a triangle
+# of cables or a switch): reaching the workers, finding the links and the RDMA devices each runs on (on a ring, NCCL's
+# ring graphs too), and the image and the weights on every Spark. FABRIC_EXPECT (ring or mesh) is set by the start
+# script at four; at three detect_ring classifies the links itself (FABRIC_KIND: triangle or mesh).
 # Sourced after scripts/prepare.sh (its helpers, config.sh, nodes.sh); start.sh and stop.sh never read it.
 #
 # The ring discovery (node_inventory, pair_links), the per-rank NCCL graph files (ring_graphs, graph_xml) and the NCCL
@@ -15,8 +17,18 @@
 [[ "${_GLM_TP4_LOADED:-0}" == 1 ]] && return 0
 _GLM_TP4_LOADED=1
 
-# --- the three workers -------------------------------------------------------------------------------------------------
-worker_ids() { echo 1 2 3; }
+# --- the workers (TP - 1 of them) ----------------------------------------------------------------------------------------
+worker_ids() { seq 1 $((TP - 1)); }
+rank_ids() { seq 0 $((TP - 1)); }
+tp_words() { case "$TP" in 3) printf three ;; 4) printf four ;; *) printf '%s' "$TP" ;; esac; }   # for messages
+# worker_hosts <separator> [reverse]: the workers' hosts, rank 1 first (or last).
+worker_hosts() {
+  local i out='' ids
+  ids=$(worker_ids); [[ "${2:-}" != reverse ]] || ids=$(worker_ids | sort -rn)
+  for i in $ids; do out+="${out:+$1}$(whost "$i")"; done
+  printf '%s' "$out"
+}
+tp_stop() { if (( TP == 3 )); then printf stop-tp3.sh; else printf stop-tp4.sh; fi; }
 wvar() { if (( $2 == 1 )); then printf '%s' "$1"; else printf '%s%s' "$1" "$2"; fi; }   # WORKER, WORKER2, WORKER3
 wtarget() { local v; v=$(wvar WORKER "$1"); printf '%s' "${!v}"; }
 whost() { local t; t=$(wtarget "$1"); printf '%s' "${t#*@}"; }
@@ -166,7 +178,8 @@ node_inventory() {
 # i's lowest address on its link to rank 0>", "missing <a> <b>" for two ranks without a common subnet, "ring
 # <ranks...>" when the links form one ring through all the ranks (every rank linked to two), in its order from rank 0
 # toward its lower-numbered neighbour, "toward <r> <s> <hcas>" for every linked pair (r's devices on the subnets it
-# shares with s), and "prefix <len>": the shortest prefix length (longer than the links' own) at which, on every link,
+# shares with s), "crowd <n>": the most ranks with an address in one subnet (2 on cables; on a switch, all of them),
+# and "prefix <len>": the shortest prefix length (longer than the links' own) at which, on every link,
 # each device's address and exactly one of the peer's share a subnet and no two of a node's devices do (a port and its
 # PCIe twin addressed .N and .10N in one /24: 26), so NCCL's subnet-aware routing can tell the twins apart.
 pair_links() {
@@ -215,7 +228,12 @@ own = max((e[2].network.prefixlen for r in ranks for e in nodes.get(r, [])), def
 pre = next((n for n in range(own, 31) if splits(n)), None)
 if pre is not None:
     print("prefix", pre)
-if len(ranks) > 3 and all(len(links[r]) == 2 for r in ranks):
+crowd = {}
+for r in ranks:
+    for e in nodes.get(r, []):
+        crowd.setdefault(e[2].network, set()).add(r)
+print("crowd", max((len(v) for v in crowd.values()), default=0))
+if len(ranks) >= 3 and all(len(links[r]) == 2 for r in ranks):
     order = [ranks[0], min(links[ranks[0]])]
     while len(order) <= len(ranks):
         nxt = (links[order[-1]] - {order[-2]}).pop()
@@ -229,12 +247,14 @@ if len(ranks) > 3 and all(len(links[r]) == 2 for r in ranks):
 
 # Filled by detect_ring: each rank's bootstrap netdev, RoCE devices and GID index; the head's address toward each
 # worker (a cabled address for a neighbour, the route's source for the Spark across the ring) and the worker's.
+# FABRIC_KIND: ring (four Sparks cabled in a ring), triangle (three, every pair on its own cable) or mesh (a switch).
 declare -a NODE_DEV=() NODE_HCAS=() NODE_GID=() NODE_GRAPH=() LINK_HEAD_ADDR=() LINK_WORKER_ADDR=()
 declare -A TOWARD=()
-RING_PREFIX=''
+RING_PREFIX='' FABRIC_KIND=''
 detect_ring() {
-  local i r k kind a b c d pairs missing='' ring='' order='' peer
+  local i r s kind a b c d pairs missing='' ring='' peer crowd=0 n gids='' towards
   local -a inv=()
+  n=$(tp_words)
   inv[0]=$(node_inventory)
   for i in $(worker_ids); do
     inv[i]=$(wfn_n "$i" node_inventory -- "node_inventory $(printf '%q' "$MASTER_ADDR")") \
@@ -242,7 +262,8 @@ detect_ring() {
     [[ "${inv[i]}" != *'master none'* ]] \
       || fail E_FABRIC "$(whost "$i") has no route to MASTER_ADDR $MASTER_ADDR. Set MASTER_ADDR to an address of this Spark every worker reaches."
   done
-  pairs=$(for r in 0 1 2 3; do sed "s/^/$r /" <<<"${inv[r]}"; done | pair_links 0 1 2 3) \
+  # shellcheck disable=SC2046
+  pairs=$(for r in $(rank_ids); do sed "s/^/$r /" <<<"${inv[r]}"; done | pair_links $(rank_ids)) \
     || fail E_FABRIC 'Could not pair the Sparks'"'"' links (python3 and ip are needed on every Spark).'
   while read -r kind a b c d; do
     case "$kind" in
@@ -252,25 +273,11 @@ detect_ring() {
       ring) ring="$a $b $c $d" ;;
       toward) TOWARD["$a $b"]=$c ;;
       prefix) RING_PREFIX=$a ;;
+      crowd) crowd=$a ;;
     esac
   done <<<"$pairs"
   ring=$(xargs <<<"$ring")
-  if [[ "${FABRIC_EXPECT:-ring}" == mesh ]]; then
-    # a switch: every pair of Sparks on one RoCE subnet, so NCCL reaches every rank directly, in any order
-    if [[ -n "$missing" && -n "$ring" ]]; then
-      fail E_FABRIC "These four Sparks are cabled as a ring without a switch (no RoCE subnet between ranks$missing): use ./start-tp4-switchless.sh."
-    fi
-    [[ -z "$missing" ]] || fail E_FABRIC "Some of these four Sparks share no RoCE subnet (ranks$missing): on a switch every Spark's ConnectX-7 ports need an address on the switch's subnet (ip -4 addr)."
-  else
-    [[ -n "$missing" ]] || fail E_FABRIC 'Every pair of these four Sparks shares a RoCE subnet (a switch), not a ring: use ./start-tp4.sh.'
-  fi
-  if [[ "${FABRIC_EXPECT:-ring}" == ring ]]; then
-    [[ -n "$ring" ]] || fail E_FABRIC "The four Sparks' links do not form one ring (no common subnet between ranks$missing): cable each Spark to two others, one subnet per cable, and give both ends addresses on it."
-    if [[ "$ring" != '0 1 2 3' ]]; then
-      for k in $(cut -d' ' -f2- <<<"$ring"); do order+=", $(whost "$k")"; done
-      fail E_FABRIC "The Sparks are cabled as a ring, but WORKER, WORKER2 and WORKER3 are not in its order (from this Spark$order, and back): set them in that order in scripts/local.sh."
-    fi
-  fi
+  classify_fabric "$missing" "$ring" "$crowd"
   for i in $(worker_ids); do
     peer=${LINK_WORKER_ADDR[i]:-}
     if [[ -z "$peer" ]]; then
@@ -285,32 +292,73 @@ detect_ring() {
     read -r LINK_HEAD_ADDR[i] _ <<<"$(link_info "$peer")" || true
     [[ -n "${LINK_HEAD_ADDR[i]:-}" ]] || fail E_FABRIC "No route from this Spark to $peer (rank $i, $(whost "$i"))."
   done
-  for r in 0 1 2 3; do
+  for r in $(rank_ids); do
     [[ -n "${NODE_DEV[r]:-}" && "${NODE_DEV[r]}" != - ]] \
-      || fail E_FABRIC "rank $r has no default route: set SOCKET_IFNAME to the netdev of the network all four Sparks share (NCCL's bootstrap socket)."
+      || fail E_FABRIC "rank $r has no default route: set SOCKET_IFNAME to the netdev of the network all $n Sparks share (NCCL's bootstrap socket)."
     [[ -n "${NODE_HCAS[r]:-}" && "${NODE_HCAS[r]}" != - ]] \
       || fail E_FABRIC "rank $r shares no RoCE subnet with any other rank: check the ConnectX-7 cabling and addresses (ip -4 addr)."
+    gids+="${gids:+/}${NODE_GID[r]:-per device}"
   done
-  if [[ "${FABRIC_EXPECT:-ring}" == mesh ]]; then
-    log "[I_FABRIC] A switch: every pair of the four Sparks shares a RoCE subnet; RoCE v2 GID index ${NODE_GID[0]:-per device}/${NODE_GID[1]:-per device}/${NODE_GID[2]:-per device}/${NODE_GID[3]:-per device}."
-    for r in 0 1 2 3; do log "[I_FABRIC] rank $r: NCCL on ${NODE_HCAS[r]} (bootstrap ${NODE_DEV[r]})."; done
-    return 0
-  fi
-  log "[I_FABRIC] A ring: this Spark -> $(whost 1) -> $(whost 2) -> $(whost 3) -> back here; RoCE v2 GID index ${NODE_GID[0]:-per device}/${NODE_GID[1]:-per device}/${NODE_GID[2]:-per device}/${NODE_GID[3]:-per device}; subnet prefix ${RING_PREFIX:-of the links}."
-  for r in 0 1 2 3; do
-    a=$(( (r + 1) % 4 )); b=$(( (r + 3) % 4 ))
-    log "[I_FABRIC] rank $r: NCCL on ${NODE_HCAS[r]} (bootstrap ${NODE_DEV[r]}); toward the next rank ${TOWARD[$r $a]:-?}, toward the previous ${TOWARD[$r $b]:-?}."
-  done
-  log "[I_FABRIC] Rank 2 ($(whost 2)) is across the ring from this Spark: its line to rank 0 and its NFS go to ${LINK_HEAD_ADDR[2]} through a neighbour."
+  case "$FABRIC_KIND" in
+    mesh)
+      log "[I_FABRIC] A switch: every pair of the $n Sparks shares a RoCE subnet; RoCE v2 GID index $gids."
+      for r in $(rank_ids); do log "[I_FABRIC] rank $r: NCCL on ${NODE_HCAS[r]} (bootstrap ${NODE_DEV[r]})."; done ;;
+    triangle)
+      log "[I_FABRIC] A triangle: every pair of the three Sparks on a cable of its own; RoCE v2 GID index $gids; subnet prefix ${RING_PREFIX:-of the links}; NCCL set ${TP3_NCCL}."
+      for r in $(rank_ids); do
+        towards=''
+        for s in $(rank_ids); do (( s == r )) || towards+="; toward rank $s ${TOWARD[$r $s]:-?}"; done
+        log "[I_FABRIC] rank $r: NCCL on ${NODE_HCAS[r]} (bootstrap ${NODE_DEV[r]})$towards."
+      done ;;
+    ring)
+      log "[I_FABRIC] A ring: this Spark -> $(whost 1) -> $(whost 2) -> $(whost 3) -> back here; RoCE v2 GID index $gids; subnet prefix ${RING_PREFIX:-of the links}."
+      for r in $(rank_ids); do
+        a=$(( (r + 1) % TP )); b=$(( (r + TP - 1) % TP ))
+        log "[I_FABRIC] rank $r: NCCL on ${NODE_HCAS[r]} (bootstrap ${NODE_DEV[r]}); toward the next rank ${TOWARD[$r $a]:-?}, toward the previous ${TOWARD[$r $b]:-?}."
+      done
+      log "[I_FABRIC] Rank 2 ($(whost 2)) is across the ring from this Spark: its line to rank 0 and its NFS go to ${LINK_HEAD_ADDR[2]} through a neighbour." ;;
+  esac
 }
+# classify_fabric <missing pairs> <ring> <crowd> (pair_links' findings): sets FABRIC_KIND (triangle, mesh or ring) or
+# stops on a fabric this TP cannot run. Three Sparks: a triangle (every pair on a cable of its own) or a switch, told
+# apart by the crowd. Four: FABRIC_EXPECT's ring or switch, each refusing the other's cabling and a full mesh of cables.
+classify_fabric() {
+  local missing=$1 ring=$2 crowd=$3 k order=''
+  if (( TP == 3 )); then
+    # three Sparks: a triangle of cables (every pair on its own subnet; also a ring, in any order) or one switch subnet
+    [[ -z "$missing" ]] || fail E_FABRIC "These three Sparks are not linked pair by pair (no RoCE subnet between ranks$missing): cable each Spark to the other two (a triangle, one subnet per cable, both ends addressed on it), or put all three on one switch subnet."
+    if (( crowd > 2 )); then FABRIC_KIND=mesh; else FABRIC_KIND=triangle; fi
+  else
+    # four Sparks: a full mesh of cables (every pair on a subnet of its own) is neither a ring nor a switch
+    [[ -n "$missing" || "$crowd" -gt 2 ]] \
+      || fail E_FABRIC 'Every pair of these four Sparks has a cable of its own (a full mesh of cables, a triangle'"'"'s four-Spark kin): the four-Spark starts run a ring (./start-tp4-switchless.sh) or a switch (./start-tp4.sh) only.'
+    FABRIC_KIND=${FABRIC_EXPECT:-ring}
+  fi
+  if [[ "$FABRIC_KIND" == mesh && "$TP" == 4 ]]; then
+    # a switch: every pair of Sparks on one RoCE subnet, so NCCL reaches every rank directly, in any order
+    if [[ -n "$missing" && -n "$ring" ]]; then
+      fail E_FABRIC "These four Sparks are cabled as a ring without a switch (no RoCE subnet between ranks$missing): use ./start-tp4-switchless.sh."
+    fi
+    [[ -z "$missing" ]] || fail E_FABRIC "Some of these four Sparks share no RoCE subnet (ranks$missing): on a switch every Spark's ConnectX-7 ports need an address on the switch's subnet (ip -4 addr)."
+  elif [[ "$FABRIC_KIND" == ring ]]; then
+    [[ -n "$missing" ]] || fail E_FABRIC 'Every pair of these four Sparks shares a RoCE subnet (a switch), not a ring: use ./start-tp4.sh.'
+    [[ -n "$ring" ]] || fail E_FABRIC "The four Sparks' links do not form one ring (no common subnet between ranks$missing): cable each Spark to two others, one subnet per cable, and give both ends addresses on it."
+    if [[ "$ring" != '0 1 2 3' ]]; then
+      for k in $(cut -d' ' -f2- <<<"$ring"); do order+=", $(whost "$k")"; done
+      fail E_FABRIC "The Sparks are cabled as a ring, but WORKER, WORKER2 and WORKER3 are not in its order (from this Spark$order, and back): set them in that order in scripts/local.sh."
+    fi
+  fi
+}
+# tp_ring_graphs: whether the ranks run NCCL's ring with a graph file each (a ring of four; a triangle with TP3_NCCL=ring).
+tp_ring_graphs() { [[ "$FABRIC_KIND" == ring || ( "$FABRIC_KIND" == triangle && "$TP3_NCCL" == ring ) ]]; }
 
 # ring_graphs: an NCCL graph file for each rank, so that every ring channel runs over a cable: channel by channel a
 # device toward the previous rank (where the node listens), a port and its PCIe twin in turn. Written under this
 # Spark's STATE_DIR for rank 0 and under each worker's state directory for the others; mounted read-only.
 ring_graphs() {
   local r prev path
-  for r in 0 1 2 3; do
-    prev=$(( (r + 3) % 4 ))
+  for r in $(rank_ids); do
+    prev=$(( (r + TP - 1) % TP ))
     if (( r == 0 )); then
       path="$STATE_DIR/nccl-graph-rank0.xml"
       if [[ "$DRY_RUN" == 1 ]]; then plan "write $path"; else mkdir -p "$STATE_DIR"; graph_xml "$r" "$prev" > "$path"; fi
@@ -363,12 +411,24 @@ graph_xml() {
 # unsetenv shortens the environment under Zig's fixed-length view of it). Without it a follower keeps NCCL_COMM_ID,
 # and NCCL finds its bootstrap interface by that address's subnet: MASTER_ADDR is therefore this Spark's address on
 # the network every Spark shares (the LAN), not an alias only this Spark holds.
+#
+# A triangle (three Sparks, every pair on a cable of its own) is a full mesh as well as a ring: by default (TP3_NCCL=
+# eager) NCCL connects every algorithm's channels at init over every RoCE device the rank has, with crossnic and
+# subnet-aware routing sending each peer's traffic to the device on its cable, and no graph file: the set the lab's
+# first three-Spark start ran on this kit (2026-11-06). TP3_NCCL=ring runs the ring set above on the triangle instead.
 tp4_rank_env() {
   local r=$1
   RANK_ENV=(-e "TF_GLM_RANK=$r" -e "NCCL_IB_HCA=${NODE_HCAS[r]}")
   (( r != 0 )) || RANK_ENV+=(-e "NCCL_SOCKET_IFNAME=${NODE_DEV[r]}")
   [[ -z "${NODE_GID[r]}" ]] || RANK_ENV+=(-e "NCCL_IB_GID_INDEX=${NODE_GID[r]}")
-  if [[ "${FABRIC_EXPECT:-ring}" == mesh ]]; then
+  if [[ "$FABRIC_KIND" == triangle && "$TP3_NCCL" != ring ]]; then
+    RANK_ENV+=(-e NCCL_CROSS_NIC=1 -e NCCL_IB_SUBNET_AWARE_ROUTING=1 -e NCCL_P2P_DISABLE=1 -e NCCL_SHM_DISABLE=1
+               -e "NCCL_MIN_NCHANNELS=$NCCL_CHANNELS" -e "NCCL_MAX_NCHANNELS=$NCCL_CHANNELS")
+    [[ -z "$RING_PREFIX" ]] || RANK_ENV+=(-e "NCCL_IB_SUBNET_PREFIX_LEN=$RING_PREFIX")
+    RANK_MOUNTS=()
+    return 0
+  fi
+  if [[ "$FABRIC_KIND" == mesh ]]; then
     # a switch: NCCL's own algorithms and device choice over every RoCE device the rank has on the switch's subnet; one
     # GPU a node, so no P2P or SHM transport. NCCL_RUNTIME_CONNECT=1 as on the ring (channels made at first use), with
     # the cuMem setting it needs; not measured on a switch with this engine.
@@ -385,8 +445,8 @@ tp4_rank_env() {
   if [[ "$ROCE_RING" == on ]]; then
     # the engine's ring all-gather: TF_ROCE_HCA names the device toward the previous rank, then the one toward the next
     local -a tprev=() tnext=()
-    IFS=, read -r -a tprev <<<"${TOWARD[$r $(( (r + 3) % 4 ))]:-}"
-    IFS=, read -r -a tnext <<<"${TOWARD[$r $(( (r + 1) % 4 ))]:-}"
+    IFS=, read -r -a tprev <<<"${TOWARD[$r $(( (r + TP - 1) % TP ))]:-}"
+    IFS=, read -r -a tnext <<<"${TOWARD[$r $(( (r + 1) % TP ))]:-}"
     (( ${#tprev[@]} && ${#tnext[@]} )) || fail E_FABRIC "rank $r has no RoCE device toward both neighbours; set ROCE_RING=off."
     RANK_ENV+=(-e TF_ROCE=1 -e TF_ROCE_RING=1 -e "TF_ROCE_HCA=${tprev[0]},${tnext[0]}")
   fi
@@ -421,13 +481,32 @@ tp4_nfs_volume() {
   log "[I_WEIGHTS] rank $i ($(whost "$i")) reads $at over NFS from $server:$path (volume $vol)."
 }
 # tp4_prepare_worker_weights: the volumes on every worker (WORKER_WEIGHTS=nfs), or a check that each worker holds its
-# own copy (check). rsync is not offered at four: the Spark across the ring would take the checkpoint through a
-# neighbour, and three copies of 164 GiB is what NFS is for.
+# own copy (check). rsync is offered at three only (every worker on a cable of its own to this Spark), through the
+# pair's send_dir with WORKER set to each worker in turn; not at four: the Spark across the ring would take the
+# checkpoint through a neighbour, and three copies of 164 GiB is what NFS is for.
+# shellcheck disable=SC2034  # WORKER: read by nodes.sh's send_dir, worker_weights_ready and wssh (dynamic scope)
 tp4_prepare_worker_weights() {
-  local i mpath dpath
+  local i mpath dpath WORKER
   mpath=${NFS_MODEL_PATH:-$MODEL_DIR}; dpath=${NFS_DFLASH2_PATH:-$DFLASH2_DIR}
   for i in $(worker_ids); do
+    WORKER=$(wtarget "$i")   # nodes.sh's helpers (send_dir, worker_weights_ready, wssh) read WORKER
     case "$WORKER_WEIGHTS" in
+      rsync)
+        (( TP == 3 )) || fail E_CONFIG 'WORKER_WEIGHTS=rsync runs at three Sparks only: set nfs or check.'
+        if [[ "$DRY_RUN" == 1 ]]; then
+          log "When $(whost "$i")'s checkpoint is missing or another revision:"
+          send_dir "$MODEL_DIR" "$WORKER_MODEL_DIR" checkpoint
+          [[ "$DRAFTER" != dflash2 ]] || send_dir "$DFLASH2_DIR" "$WORKER_DFLASH2_DIR" 'DFlash2 weights'
+          continue
+        fi
+        if worker_weights_ready "$WORKER_MODEL_DIR" "$MODEL_REVISION"; then
+          log "[I_WEIGHTS] rank $i ($(whost "$i")) already holds the checkpoint at ${MODEL_REVISION:0:12} ($WORKER_MODEL_DIR)."
+        else
+          send_dir "$MODEL_DIR" "$WORKER_MODEL_DIR" checkpoint
+        fi
+        if [[ "$DRAFTER" == dflash2 ]] && ! wssh_n "$i" test -f "$WORKER_DFLASH2_DIR/config.json" >/dev/null 2>&1; then
+          send_dir "$DFLASH2_DIR" "$WORKER_DFLASH2_DIR" 'DFlash2 weights'
+        fi ;;
       nfs)
         tp4_nfs_volume "$i" "$NFS_MODEL_VOLUME" "$mpath" /model
         [[ "$DRAFTER" != dflash2 ]] || tp4_nfs_volume "$i" "$NFS_DFLASH2_VOLUME" "$dpath" /dflash2 ;;
@@ -440,7 +519,7 @@ tp4_prepare_worker_weights() {
         [[ "$DRAFTER" != dflash2 ]] || wssh_n "$i" test -f "$WORKER_DFLASH2_DIR/config.json" >/dev/null 2>&1 \
           || fail E_WEIGHTS "$(whost "$i") has no DFlash2 weights in $WORKER_DFLASH2_DIR (WORKER_WEIGHTS=check)."
         log "[I_WEIGHTS] rank $i ($(whost "$i")) holds the checkpoint and the drafter." ;;
-      *) fail E_CONFIG "WORKER_WEIGHTS=$WORKER_WEIGHTS: at four Sparks the workers read the checkpoint over NFS (nfs) or hold their own copy (check)." ;;
+      *) fail E_CONFIG "WORKER_WEIGHTS=$WORKER_WEIGHTS: at $(tp_words) Sparks the workers read the checkpoint over NFS (nfs) or hold their own copy (check$( (( TP != 3 )) || printf '; or rsync: this Spark sends its copy'))." ;;
     esac
   done
 }
@@ -469,7 +548,7 @@ tp4_worker_mounts() {
   WMOUNTS+=(-v "${WORKER_CACHE[i]}:/state" "${RANK_MOUNTS[@]}")
 }
 
-# --- logs and the memory guard over four Sparks ------------------------------------------------------------------------------
+# --- logs and the memory guard over every Spark ------------------------------------------------------------------------------
 tp4_collect_logs() {
   local i
   [[ -n "${RUN_LOG_DIR:-}" && -d "$RUN_LOG_DIR" ]] || return 0
@@ -483,18 +562,19 @@ tp4_start_memguard() {
   [[ "$MEMGUARD" == 1 ]] || return 0
   if [[ "$DRY_RUN" == 1 ]]; then
     log "Memory guard: sample MemAvailable (plus parked pages) on every Spark (this one each ${MEMGUARD_INTERVAL_S} s, a worker"
-    log "in turn) and run ./stop-tp4.sh when one stays under ${MEMGUARD_FLOOR_GIB} GiB for ${MEMGUARD_HOLD_S} s."
+    log "in turn) and run ./$(tp_stop) when one stays under ${MEMGUARD_FLOOR_GIB} GiB for ${MEMGUARD_HOLD_S} s."
     return 0
   fi
   ( exec 8>&-
-    declare -a under=(0 0 0 0) sample=('' '' '' '')
+    declare -a under=() sample=()
+    for r in $(rank_ids); do under[r]=0; sample[r]=''; done
     tick=0
     while sleep "$MEMGUARD_INTERVAL_S"; do
       [[ "$(docker inspect -f '{{.State.Running}}' "$CONTAINER_NAME" 2>/dev/null || true)" == true ]] || exit 0
       sample[0]=$(mem_avail_gb | awk '{print $1}')
-      w=$(( tick % 3 + 1 )); sample[w]=$(tp4_worker_avail_gib "$w" || true)
+      w=$(( tick % (TP - 1) + 1 )); sample[w]=$(tp4_worker_avail_gib "$w" || true)
       tick=$(( tick + 1 ))
-      for r in 0 1 2 3; do
+      for r in $(rank_ids); do
         if [[ -n "${sample[r]}" ]] && ! at_least "${sample[r]}" "$MEMGUARD_FLOOR_GIB"; then
           under[r]=$(( under[r] + MEMGUARD_INTERVAL_S ))
         else under[r]=0; fi
@@ -502,11 +582,11 @@ tp4_start_memguard() {
           who=$(hostname); (( r == 0 )) || who=$(whost "$r")
           printf '[memguard] %s: %s GiB available, under the %s GiB floor for %s s; stopping the server\n' \
             "$who" "${sample[r]}" "$MEMGUARD_FLOOR_GIB" "$MEMGUARD_HOLD_S" | tee -a "$RUN_LOG_DIR/memguard.log" >&2
-          MEMGUARD=0 "$REPO_ROOT/stop-tp4.sh" >> "$RUN_LOG_DIR/memguard.log" 2>&1 || true
+          MEMGUARD=0 "$REPO_ROOT/$(tp_stop)" >> "$RUN_LOG_DIR/memguard.log" 2>&1 || true
           exit 0
         fi
       done
     done ) &
   MEMGUARD_PID=$!
-  log "[I_MEMGUARD] Watching all four Sparks: a stop below ${MEMGUARD_FLOOR_GIB} GiB held ${MEMGUARD_HOLD_S} s (pid $MEMGUARD_PID; MEMGUARD=0 turns it off)."
+  log "[I_MEMGUARD] Watching all $(tp_words) Sparks: a stop below ${MEMGUARD_FLOOR_GIB} GiB held ${MEMGUARD_HOLD_S} s (pid $MEMGUARD_PID; MEMGUARD=0 turns it off)."
 }

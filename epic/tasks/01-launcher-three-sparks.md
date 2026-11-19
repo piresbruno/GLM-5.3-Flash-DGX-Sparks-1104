@@ -1,6 +1,18 @@
 # 01 - Launcher for three Sparks: the ring launcher at TP=3
 
-Stage 0. Depends on: nothing. Estimate: 2-3 days. Status: todo.
+Stage 0. Depends on: nothing. Estimate: 2-3 days. Status: done off the Sparks 2026-11-19; the kit's DRY_RUN and LIVE wait for task 03's window.
+
+## Result
+
+- `start-tp3.sh` / `stop-tp3.sh` export `TP=3 GLM_TPN=1` and exec the four-Spark scripts; `GLM_TP4=1` still works.
+- `scripts/tp4.sh`: ranks from `TP`; `pair_links` prints `crowd` (most ranks on one subnet) and finds rings of three;
+  `classify_fabric` (pure, tested): at 3 `triangle` (no pair missing, crowd 2) or `mesh` (switch), a missing cable
+  stops naming the pair; at 4 as before, and a full mesh of cables refused by name. `TP3_NCCL=eager` (default: crossnic,
+  subnet-aware routing, all devices, no graph, no runtime connect) or `ring` (the ring set and graphs). rsync weights
+  at 3 through the pair's `send_dir` per worker. Memory guard and logs sized by `TP`.
+- `prepare.sh` / `config.sh` as in steps 5-6, plus `KDA_PAD` (task 05). `local.sh.example`: a commented TP=3 block.
+- Not done offline: diffing `DRY_RUN=1 ./start-tp4*.sh` against `main` needs the workers over ssh; pair_links on
+  four-Spark inventories is checked byte-equal to `main` instead (task 02's test).
 
 ## Goal
 

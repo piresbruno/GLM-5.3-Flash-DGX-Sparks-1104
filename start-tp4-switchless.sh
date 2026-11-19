@@ -3,7 +3,8 @@
 # to the workers, check the weights, start one rank on each Spark (rank 0 here, the API), wait for the API and
 # smoke-test it. The same image, patches, settings and checks as ./start.sh; the ring's NCCL settings and the workers'
 # NFS weights are scripts/tp4.sh. Four Sparks on a switch: ./start-tp4.sh, which runs this script with
-# FABRIC_EXPECT=mesh. README: "4 Sparks".
+# FABRIC_EXPECT=mesh. Three Sparks (a triangle of cables, or a switch): ./start-tp3.sh, which runs this script with
+# TP=3 (FABRIC_EXPECT unused there: the links say which). README: "4 Sparks".
 # Usage: ./start-tp4-switchless.sh [restart]   (./stop-tp4.sh stops it; DRY_RUN=1 prints the plan and the ring found, changes nothing)
 # Configuration: scripts/config.sh defaults < .env < scripts/local.sh < exported environment, with WORKER, WORKER2 and
 # WORKER3 in the ring's order from this Spark (its two neighbours are WORKER and WORKER3; WORKER2 is across the ring).
@@ -17,7 +18,14 @@ case "$FABRIC_EXPECT" in
   mesh) TP4_START=./start-tp4.sh; FABRIC_DESC='a switch' ;;
   *) printf '[E_CONFIG] FABRIC_EXPECT must be ring or mesh, not %s.\n' "$FABRIC_EXPECT" >&2; exit 1 ;;
 esac
-export TP=4 GLM_TP4=1
+# TP=3 comes from ./start-tp3.sh (GLM_TPN=1 TP=3); anything else is the four-Spark start. GLM_TP4=1 is GLM_TPN's old
+# name, kept for scripts that set it.
+if [[ "${GLM_TPN:-0}" == 1 && "${TP:-}" == 3 ]]; then
+  TP4_START=./start-tp3.sh; FABRIC_DESC='a triangle or a switch'
+else
+  export TP=4
+fi
+export GLM_TPN=1
 # shellcheck source=scripts/prepare.sh
 source ./scripts/prepare.sh
 # shellcheck source=scripts/tp4.sh
@@ -33,8 +41,8 @@ esac
 (( $# <= 1 )) || fail E_CONFIG "Usage: $TP4_START [restart]."
 validate_config
 # KV_SHARD=1 (engine patch 0114 here) shards each stream's latent rows over two ranks and refuses any other world
-# (KvShardNeedsTwoRanks): stop here, before anything runs, rather than after the four ranks start.
-[[ "$KV_SHARD" != 1 ]] || fail E_CONFIG 'KV_SHARD=1 runs at TP=2 only (engine patch 0114): unset KV_SHARD for a four-Spark start.'
+# (KvShardNeedsTwoRanks): stop here, before anything runs, rather than after the ranks start.
+[[ "$KV_SHARD" != 1 ]] || fail E_CONFIG "KV_SHARD=1 runs at TP=2 only (engine patch 0114): unset KV_SHARD for a $(tp_words)-Spark start."
 # PROMPT_CACHE_MIN_GIB is start.sh's check of the pair's startup lines; this start does not read it.
 [[ -z "$PROMPT_CACHE_MIN_GIB" ]] || warn W_CONFIG "PROMPT_CACHE_MIN_GIB=$PROMPT_CACHE_MIN_GIB is not checked by $TP4_START; see rank 0's prompt cache line after LIVE."
 set_image
@@ -44,7 +52,7 @@ inspect_model
 # carries everything: the ring all-gather relays through neighbours, which a switch does not need, and this engine
 # has no other RoCE path for four ranks.
 ROCE=off
-[[ "$FABRIC_EXPECT" == ring || "$ROCE_RING" == off ]] \
+[[ ( "$FABRIC_EXPECT" == ring && "$TP" == 4 ) || "$ROCE_RING" == off ]] \
   || fail E_CONFIG 'ROCE_RING=on is the ring'"'"'s RoCE relay (engine patch 0108); on a switch NCCL carries every exchange: unset ROCE_RING.'
 # NCCL_COMM_ID's address: this Spark's address on the network every Spark shares, the one its default route leaves
 # with (the LAN). Every rank keeps NCCL_COMM_ID and NCCL finds its bootstrap interface by that address's subnet (see
@@ -63,12 +71,14 @@ API_HOST="$HOST"
 [[ "$API_HOST" != *:* ]] || API_HOST="[$API_HOST]"
 URL="http://$API_HOST:$PORT"
 
-# --- the context window (as start.sh, keyed with the three workers and the reduce mode) ---------------------------------
-FIT_FILE="$STATE_DIR/context-fit-tp4.tsv"
+# --- the context window (as start.sh, keyed with the workers and the reduce mode) ---------------------------------------
+FIT_FILE="$STATE_DIR/context-fit-tp$TP.tsv"
+# three Sparks only (four keep their remembered fits): the pad changes every rank's KDA rows, and so its room
+FIT_TP3=(); (( TP != 3 )) || FIT_TP3=("$KDA_PAD" "$TP3_NCCL")
 fit_key() {
   printf '%s|' "$PATCHES_HASH" "$MODEL_DIR" "$WORKER" "$WORKER2" "$WORKER3" "$TP" "$PARALLEL" "$KV" "$KV_PAGES" "$DENSE" "$HEAD" "$VISION" "$VISION_MAX_IMAGES" \
     "$DRAFTER" "$DRAFTER_BITS" "$MEMORY_RESERVE_GIB" "$PROMPT_CACHE_GIB" "$CACHE_FIRST" "$HOST_CACHE_GIB" "$PREFILL_REDUCE" "$CONTEXT_MAX" "$SERVE_EXTRA_ARGS" \
-    | sha256sum | cut -c1-16
+    "${FIT_TP3[@]}" | sha256sum | cut -c1-16
 }
 remembered_context() {
   [[ -f "$FIT_FILE" ]] || return 0
@@ -209,7 +219,7 @@ declare -a PASS_ENV=()
 MANAGED_ENV=' HOME HF_HUB_OFFLINE CUDA_DEVICE_ORDER CUDA_VISIBLE_DEVICES TENSORFOLD_NO_UPDATE_CHECK TENSORFOLD_NO_LIVE
  TENSORFOLD_MEMORY_RESERVE_GIB TF_GLM_DENSE_BITS TF_GLM_HEAD_BITS TF_GLM_CLEAR_THINKING TF_GLM_RANK TF_GLM_WORLD TF_CUDA_DEVICE
  TF_KV_PAGES TF_GLM_CE_EXCHANGE TF_GLM_ABSORB_MMA TF_GLM_W8A8 TF_GLM_HOST_CACHE_GIB TENSORFOLD_PREFILL_SHARE TENSORFOLD_PREFILL_BUDGET TF_PROMPT_CACHE_FIRST
- TF_GLM_KV_SHARD TF_GLM_L2PF TF_EXTRA_EOS TF_THINK_OFF_SPLIT TF_ROCE TF_ROCE_RING TF_ROCE_MAX_KB TF_ROCE_HCA TF_BIN TF_REPO TF_REF TF_GLM_PREFILL_REDUCE
+ TF_GLM_KV_SHARD TF_GLM_L2PF TF_GLM_KDA_PAD TF_EXTRA_EOS TF_THINK_OFF_SPLIT TF_ROCE TF_ROCE_RING TF_ROCE_MAX_KB TF_ROCE_HCA TF_BIN TF_REPO TF_REF TF_GLM_PREFILL_REDUCE
  NCCL_COMM_ID NCCL_SOCKET_IFNAME NCCL_IB_HCA NCCL_IB_GID_INDEX NCCL_MIN_NCHANNELS NCCL_MAX_NCHANNELS NCCL_ALGO NCCL_GRAPH_FILE
  NCCL_CROSS_NIC NCCL_IB_SUBNET_AWARE_ROUTING NCCL_P2P_DISABLE NCCL_SHM_DISABLE NCCL_IB_MERGE_NICS NCCL_IB_SUBNET_PREFIX_LEN
  NCCL_RUNTIME_CONNECT NCCL_CUMEM_ENABLE NCCL_CUMEM_HOST_ENABLE '
@@ -228,6 +238,8 @@ build_env_args() {
   [[ "$CACHE_FIRST" != 1 ]] || ENV_ARGS+=(-e "TF_PROMPT_CACHE_FIRST=1")
   # L2PF=1: engine patch 0117 prefetches each decode window's next weights into L2 (every rank must agree)
   [[ "$L2PF" != 1 ]] || ENV_ARGS+=(-e "TF_GLM_L2PF=1")
+  # KDA_PAD=1 at three Sparks: engine patch 0122 pads the KDA input stack to one eight-aligned width (every rank alike)
+  [[ "$KDA_PAD" != 1 || "$TP" != 3 ]] || ENV_ARGS+=(-e "TF_GLM_KDA_PAD=1")
   # EXTRA_EOS: engine patch 0120 ends a reply at these tokens too (every rank alike)
   [[ "$EXTRA_EOS" == none ]] || ENV_ARGS+=(-e "TF_EXTRA_EOS=$EXTRA_EOS")
   # THINK_OFF_SPLIT: engine patch 0121 moves a thinking-off draft closed by </think> into reasoning_content
@@ -259,7 +271,7 @@ RUN_ARGS=(--gpus all --ipc=host --network host --shm-size 16g --cap-add IPC_LOCK
 
 show_ranks() {
   local r
-  for (( r = 3; r >= 0; r-- )); do
+  for (( r = TP - 1; r >= 0; r-- )); do
     if (( r == 0 )); then printf '  rank 0 here (%s), HTTP server and vision tower:\n    ' "$(hostname)"
     else printf '  rank %s on %s (follows rank 0'"'"'s steps, binds no port):\n    ' "$r" "$(whost "$r")"; fi
     shq env "TF_GLM_RANK=$r" "TF_GLM_WORLD=$TP" TF_CUDA_DEVICE=0 "NCCL_COMM_ID=$MASTER_ADDR:$NCCL_PORT" "TF_GLM_PREFILL_REDUCE=$PREFILL_REDUCE" \
@@ -276,20 +288,20 @@ api_curl() {
   fi
 }
 
-# --- launch: ranks 3, 2, 1 on the workers (each retries its line to rank 0 for up to 300 s), then rank 0 here ----------
+# --- launch: ranks TP-1 .. 1 on the workers (each retries its line to rank 0 for up to 300 s), then rank 0 here ----------
 launch() {
   local ctx=$1 i a
   local -a user_args=() mounts=() cmd=() wcmd=() worker_env=()
   build_serve_args "$ctx"
   build_env_args
-  RUN_LOG_DIR="$LOG_DIR/run-tp4-$(date -u +%Y%m%dT%H%M%SZ)-$$-$ATTEMPT"
+  RUN_LOG_DIR="$LOG_DIR/run-tp$TP-$(date -u +%Y%m%dT%H%M%SZ)-$$-$ATTEMPT"
   log "Ranks:"
   show_ranks
   if [[ "$DRY_RUN" != 1 ]]; then
     mkdir -p "$RUN_LOG_DIR" "$CACHE_DIR/home" "$CACHE_DIR/learn"
     ln -sfn -- "$RUN_LOG_DIR" "$LOG_DIR/current"
   fi
-  for i in 3 2 1; do
+  for (( i = TP - 1; i >= 1; i-- )); do
     [[ "$DRY_RUN" == 1 ]] || wssh_n "$i" mkdir -p "${WORKER_CACHE[i]}/home" "${WORKER_STATE[i]}" \
       || fail E_START "Could not create ${WORKER_CACHE[i]} on $(whost "$i")."
     tp4_rank_env "$i"
@@ -324,7 +336,7 @@ launch() {
 
 # Every container down, rank 0 first so it ends the followers' steps; used between fit attempts and on failure.
 stop_all() {
-  GLM_STOP_LOCK_HELD=1 MEMGUARD=0 "$REPO_ROOT/stop-tp4.sh" >/dev/null 2>&1 \
+  GLM_STOP_LOCK_HELD=1 MEMGUARD=0 "$REPO_ROOT/$(tp_stop)" >/dev/null 2>&1 \
     || fail E_STOP 'The ranks would not stop (stop, then kill, verified absent). Clean up by hand: docker ps on every Spark.'
 }
 
@@ -351,7 +363,7 @@ wait_ready() {
     if (( SECONDS - started >= WAIT_TIMEOUT )); then
       stop_follower
       tp4_collect_logs
-      fail E_API "The API did not come up within $WAIT_TIMEOUT s. Inspect $LOG_DIR/current/rank*.log; raise WAIT_TIMEOUT for a first start (each rank hashes the checkpoint once, three of them over NFS)."
+      fail E_API "The API did not come up within $WAIT_TIMEOUT s. Inspect $LOG_DIR/current/rank*.log; raise WAIT_TIMEOUT for a first start (each rank hashes the checkpoint once, the workers over NFS)."
     fi
     if (( SECONDS - heartbeat >= 30 )); then
       log "Waiting for the API: $((SECONDS - started)) s (first start: each rank hashes the checkpoint once, the workers over NFS; then the load and graphs)."
@@ -374,8 +386,8 @@ show_failure() {
 live_message() {
   brand_style
   local weights=EXL3; [[ "$FP8" != 1 ]] || weights=FP8
-  printf '%sGLM-5.3-Flash-%s is now LIVE! on port %s (four Sparks, TP=4)%s\n%sEndpoint: %s/v1%s\n' \
-    "$AE_SILVER" "$weights" "$PORT" "$AE_RESET" "$AE_WHITE" "$URL" "$AE_RESET"
+  printf '%sGLM-5.3-Flash-%s is now LIVE! on port %s (%s Sparks, TP=%s)%s\n%sEndpoint: %s/v1%s\n' \
+    "$AE_SILVER" "$weights" "$PORT" "$(tp_words)" "$TP" "$AE_RESET" "$AE_WHITE" "$URL" "$AE_RESET"
 }
 
 SMOKE_JSON=$(python3 - "$SERVED_NAME" <<'PY'
@@ -400,7 +412,7 @@ startup_report() {
 
 finish_start() {
   if [[ "$DRY_RUN" == 1 ]]; then
-    log "Poll every 5 s for up to $WAIT_TIMEOUT s (rank 0 listens once all four ranks have loaded and agreed):"
+    log "Poll every 5 s for up to $WAIT_TIMEOUT s (rank 0 listens once all $(tp_words) ranks have loaded and agreed):"
     plan curl --fail --silent --max-time 5 "$URL/health"
     [[ -z "${TENSORFOLD_API_KEY:-}" ]] || log '  (requests below carry Authorization: Bearer from TENSORFOLD_API_KEY; not shown)'
     plan curl --fail --silent --max-time 10 "$URL/v1/models"
@@ -437,16 +449,16 @@ PY
 }
 
 banner
-printf '\n%s\n%s at once | context %s (%s)\n%s dense, %s head, %s KV | %s drafts | vision %s | reserve %s GiB | port %s\nTP=4 on %s: rank 0 here, ranks 1-3 on %s, %s, %s | NCCL only, prefill reduce %s\n' \
+printf '\n%s\n%s at once | context %s (%s)\n%s dense, %s head, %s KV | %s drafts | vision %s | reserve %s GiB | port %s\nTP=%s on %s: rank 0 here, ranks 1-%s on %s | NCCL only, prefill reduce %s\n' \
   "$MODEL_DESC" "$PARALLEL" "$CTX" "$CTX_NOTE" "$DENSE" "$HEAD" "$KV$([[ "$KV_PAGES" != on ]] || echo ' (one shared page pool; context = one request'"'"'s cap)')" \
-  "$DRAFTER" "$VISION" "$MEMORY_RESERVE_GIB" "$PORT" "$FABRIC_DESC" "$(whost 1)" "$(whost 2)" "$(whost 3)" "$PREFILL_REDUCE"
+  "$DRAFTER" "$VISION" "$MEMORY_RESERVE_GIB" "$PORT" "$TP" "$FABRIC_DESC" "$((TP - 1))" "$(worker_hosts ', ')" "$PREFILL_REDUCE"
 
-step 1 'Check all four Sparks: Linux aarch64, Docker, the NVIDIA runtime, memory, disk and ports'
+step 1 "Check all $(tp_words) Sparks: Linux aarch64, Docker, the NVIDIA runtime, memory, disk and ports"
 if [[ "$DRY_RUN" == 1 ]]; then
   log '[I_DRY_RUN] Plan only: nothing is built, started, downloaded, sent or changed. The links below are probed read-only.'
-  log "Check Linux aarch64, docker group access and the NVIDIA runtime here and on the three workers over ssh; a GB10 on each;"
+  log "Check Linux aarch64, docker group access and the NVIDIA runtime here and on the $((TP - 1)) workers over ssh; a GB10 on each;"
   log "$MIN_AVAIL_GIB GiB available on each; disk for what is missing; port $PORT on $HOST and $NCCL_PORT-$((NCCL_PORT + 1)) here."
-  if [[ "$MODE" == restart ]]; then DRY_RUN=1 "$REPO_ROOT/stop-tp4.sh"; fi
+  if [[ "$MODE" == restart ]]; then DRY_RUN=1 "$REPO_ROOT/$(tp_stop)"; fi
   tp4_probe_workers
 else
   [[ "$(uname -s)" == Linux && "$(uname -m)" == aarch64 ]] || fail E_PLATFORM 'This recipe requires Linux aarch64 (DGX Spark, GB10).'
@@ -466,17 +478,17 @@ else
   running=$(docker inspect -f '{{.State.Running}}' "$CONTAINER_NAME" 2>/dev/null || true)
   if [[ "$running" == true && "$MODE" == start ]]; then
     log "$CONTAINER_NAME is already running. Endpoint: $URL/v1"
-    log "Use $TP4_START restart to apply changed settings, or ./stop-tp4.sh to stop it."
+    log "Use $TP4_START restart to apply changed settings, or ./$(tp_stop) to stop it."
     RUN_LOG_DIR=$(readlink -f "$LOG_DIR/current" 2>/dev/null || true)
     [[ -d "$RUN_LOG_DIR" ]] || fail E_LOG 'The running container has no accessible log directory. Inspect its mounts.'
-    wait_ready || { show_failure; fail E_START "A rank exited. Inspect $LOG_DIR/current/rank*.log; ./stop-tp4.sh archives them."; }
+    wait_ready || { show_failure; fail E_START "A rank exited. Inspect $LOG_DIR/current/rank*.log; ./$(tp_stop) archives them."; }
     finish_start
     exit 0
   fi
   any=0
   docker container inspect "$CONTAINER_NAME" >/dev/null 2>&1 && any=1
   for i in $(worker_ids); do wssh_n "$i" docker container inspect "$CONTAINER_NAME" >/dev/null 2>&1 && any=1; done
-  (( any == 0 )) || GLM_STOP_LOCK_HELD=1 "$REPO_ROOT/stop-tp4.sh"
+  (( any == 0 )) || GLM_STOP_LOCK_HELD=1 "$REPO_ROOT/$(tp_stop)"
   names=$(nvidia-smi -L 2>/dev/null) || fail E_GPU 'Cannot list GPUs. Check the driver.'
   grep -q 'GB10' <<< "$names" || warn W_GPU "This Spark's GPU is not a GB10: $(head -1 <<< "$names")."
   log "[I_GPU] rank 0: $(sed -n '1s/ (UUID.*//p' <<< "$names")."
@@ -509,7 +521,7 @@ fi
 
 check_weights_access
 
-step 2 "Build the TensorFold native image with $PATCH_COUNT engine patches for sm_$SM, and send it to the three workers"
+step 2 "Build the TensorFold native image with $PATCH_COUNT engine patches for sm_$SM, and send it to the $((TP - 1)) workers"
 prepare_image
 tp4_ship_image
 
@@ -518,16 +530,18 @@ prepare_weights
 model_overlay
 [[ "$EFFORT_AFTER_DOWNLOAD" == 0 ]] || effort_template
 
-if [[ "$FABRIC_EXPECT" == ring ]]; then
+if (( TP == 3 )); then
+  step 4 'Find the links (a triangle or a switch), and mount or send the weights on the workers'
+elif [[ "$FABRIC_EXPECT" == ring ]]; then
   step 4 'Find the ring, write the NCCL graphs, and mount the weights on the workers'
 else
   step 4 'Find the links on the switch, and mount the weights on the workers'
 fi
 detect_ring
-[[ "$FABRIC_EXPECT" != ring ]] || ring_graphs
+! tp_ring_graphs || ring_graphs
 tp4_prepare_worker_weights
 
-step 5 "Start ranks 3, 2 and 1 on $(whost 3), $(whost 2) and $(whost 1), then rank 0 here"
+step 5 "Start ranks $((TP - 1)) to 1 on $(worker_hosts ', ' reverse), then rank 0 here"
 ATTEMPT=1
 launch "$CTX"
 
@@ -552,7 +566,7 @@ if [[ "$DRY_RUN" != 1 ]] && ! wait_ready; then
     fi
     if [[ -z "$new" ]] || (( ATTEMPT > ${CONTEXT_RETRIES:-3} )); then
       show_failure
-      (( ATTEMPT == 1 )) && fail E_START "A rank exited during startup. Inspect $LOG_DIR/current/rank*.log; ./stop-tp4.sh archives them."
+      (( ATTEMPT == 1 )) && fail E_START "A rank exited during startup. Inspect $LOG_DIR/current/rank*.log; ./$(tp_stop) archives them."
       fail E_START "Start $ATTEMPT (--context $CTX) failed too. Inspect $LOG_DIR/current/rank*.log; lower CONTEXT or PARALLEL, or raise MEMORY_RESERVE_GIB."
     fi
     warn W_CONTEXT "This start's memory holds less than a $CTX-token window at --parallel $PARALLEL; starting once more with --context $new."

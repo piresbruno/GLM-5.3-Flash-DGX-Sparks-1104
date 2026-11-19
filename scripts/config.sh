@@ -50,7 +50,7 @@ CONTAINER_USER="${CONTAINER_USER-$(id -u):$(id -g)}"   # empty or root: run the 
 # This machine serves rank 0 and the HTTP API; WORKER (an ssh target, key-based, no password) runs rank 1.
 # Both ranks run the same image and the same flags; before the weights load they compare a fingerprint of their
 # settings, the checkpoint and the binary, and name the field that differs.
-TP="${TP:-2}"                                    # this recipe wires two Sparks; the engine also does TP=3 (unqualified here)
+TP="${TP:-2}"                                    # two Sparks (./start.sh); 3 and 4 are set by ./start-tp3.sh and the TP=4 starts
 WORKER="${WORKER:-}"                             # e.g. zurih@10.0.34.4 or spark4; set it in scripts/local.sh
 # One multiplexed connection carries the many small calls to the worker (docker inspect, the memory samples): a new
 # ssh per call would cost a handshake each time and fill its auth log.
@@ -63,7 +63,8 @@ FABRIC_SELF="${FABRIC_SELF:-}"                   # this Spark's address on the l
 NCCL_SOCKET_IFNAME="${NCCL_SOCKET_IFNAME:-}"     # this Spark's link netdev (auto); the worker's is found on the worker
 TF_ROCE_HCA="${TF_ROCE_HCA:-}"                   # RDMA devices for the link, comma separated, at most two (auto)
 NCCL_IB_GID_INDEX="${NCCL_IB_GID_INDEX:-}"       # the RoCE v2 IPv4 GID index (auto; it differs between hosts' tables)
-NCCL_CHANNELS="${NCCL_CHANNELS:-4}"              # NCCL_MIN_NCHANNELS and NCCL_MAX_NCHANNELS
+if [[ "$TP" == 3 ]]; then NCCL_CHANNELS="${NCCL_CHANNELS:-8}"   # NCCL_MIN_NCHANNELS and NCCL_MAX_NCHANNELS: 8 at three
+else NCCL_CHANNELS="${NCCL_CHANNELS:-4}"; fi                      # (the lab's first three-Spark start), 4 elsewhere
 PORT="${PORT:-8020}"
 HOST="${HOST:-0.0.0.0}"
 NCCL_PORT="${NCCL_PORT:-29583}"                  # NCCL_COMM_ID=FABRIC_SELF:NCCL_PORT; the ranks' watch line uses NCCL_PORT+1
@@ -89,10 +90,15 @@ WORKER3="${WORKER3:-}"                           # rank 3's ssh target, cabled t
 # neighbour. SOCKET_IFNAME: NCCL's bootstrap netdev on every rank (auto: each Spark's default-route netdev, the LAN).
 MASTER_ADDR="${MASTER_ADDR:-}"
 SOCKET_IFNAME="${SOCKET_IFNAME:-}"
-# TF_GLM_PREFILL_REDUCE at TP=4. The engine's default, split, sends every rank's prompt rows straight to every other
-# rank, which a ring cannot carry (the engine probes and refuses it). gather: the exchanges as all-gathers between
-# neighbours, no point-to-point sends (the qualified mode here); ring: split, its exchanges passed along the ring.
-PREFILL_REDUCE="${PREFILL_REDUCE:-gather}"
+# TF_GLM_PREFILL_REDUCE at TP=3 and TP=4. The engine's default, split, sends every rank's prompt rows straight to
+# every other rank, which a ring of four cannot carry (the engine probes and refuses it). gather: the exchanges as
+# all-gathers between neighbours, no point-to-point sends (the qualified mode at four); ring: split, its exchanges
+# passed along the ring. A triangle is a full mesh, so three Sparks take split by default (the first TP=3 runs did).
+if [[ "$TP" == 3 ]]; then PREFILL_REDUCE="${PREFILL_REDUCE:-split}"; else PREFILL_REDUCE="${PREFILL_REDUCE:-gather}"; fi
+# TP3_NCCL: NCCL's settings on a triangle of three Sparks. eager (default): every channel connected at init, crossnic
+# and subnet-aware routing over every RoCE device, no graph file (the lab's first three-Spark start); ring: the
+# four-Spark ring's set (NCCL_ALGO=Ring, a graph file a rank, connections at first use), for an A/B leg.
+TP3_NCCL="${TP3_NCCL:-eager}"
 RING_NCCL_ALGO="${RING_NCCL_ALGO:-Ring}"         # NCCL_ALGO on the ring: Ring sends only to the next rank
 # ROCE_RING=on: the decode and verify all-gathers up to ROCE_MAX_KB a rank as one-shot RDMA writes to both
 # neighbours, each relaying half of a shard to the rank across (engine patch 0108, TF_ROCE_RING=1, TF_ROCE_HCA naming
@@ -201,7 +207,8 @@ KV_PAGES="${KV_PAGES:-on}"
 # slower than q8 + ABSORB_MMA + W8A8. Dense weights are only ~1.8 GiB of 81.8 here (first_k_dense_replace 3,
 # 288 routed experts), so narrowing them buys little and costs measurably.
 DENSE="${DENSE:-q8}"                             # TF_GLM_DENSE_BITS: bf16 (16) | q8 | q6 | q4 (symmetric int codes, groups of 64)
-HEAD="${HEAD:-bf16}"                             # TF_GLM_HEAD_BITS for the LM head, same choices
+if [[ "$TP" == 3 ]]; then HEAD="${HEAD:-q8}"      # TF_GLM_HEAD_BITS for the LM head, same choices: q8 at three
+else HEAD="${HEAD:-bf16}"; fi                    # (the lab's TP=3 reference), bf16 elsewhere
 # TENSORFOLD_MEMORY_RESERVE_GIB. GB10 is a unified-memory device: the engine budgets from /proc/meminfo's MemAvailable
 # (plus the pages parked on the kernel's per-CPU free lists, which MemAvailable leaves out), not from a card's free
 # memory, and everything the Spark runs besides the rank comes out of the same pool. The engine's own default here is
@@ -217,9 +224,11 @@ MEMORY_RESERVE_GIB="${MEMORY_RESERVE_GIB:-6.5}"
 CACHE_FIRST="${CACHE_FIRST:-1}"
 # PROMPT_CACHE_GIB, device pages for kept prompt states: 5 on the pair (predicted to keep its two 1M windows, 4,096
 # pages, beside it), 8 with EXL3 at four Sparks (measured: all eight windows, 16,392 pages, and an 8.0 GiB cache), 4
-# with FP8=1 (measured: 6,147 pages and a 3.9 GiB cache).
-if [[ "${GLM_TP4:-0}" == 1 && "$FP8" == 1 ]]; then PROMPT_CACHE_GIB="${PROMPT_CACHE_GIB:-4}"
-elif [[ "${GLM_TP4:-0}" == 1 ]]; then PROMPT_CACHE_GIB="${PROMPT_CACHE_GIB:-8}"
+# with FP8=1 (measured: 6,147 pages and a 3.9 GiB cache); 12 at three Sparks (on the older 110-patch stack a 12 GiB
+# cache cut an agentic replay's wall time by 61%; not yet re-measured on this one).
+if [[ "$TP" == 3 ]]; then PROMPT_CACHE_GIB="${PROMPT_CACHE_GIB:-12}"
+elif [[ "${GLM_TPN:-${GLM_TP4:-0}}" == 1 && "$FP8" == 1 ]]; then PROMPT_CACHE_GIB="${PROMPT_CACHE_GIB:-4}"
+elif [[ "${GLM_TPN:-${GLM_TP4:-0}}" == 1 ]]; then PROMPT_CACHE_GIB="${PROMPT_CACHE_GIB:-8}"
 else PROMPT_CACHE_GIB="${PROMPT_CACHE_GIB:-5}"; fi
 # PROMPT_CACHE_MIN_GIB: the smallest prompt cache a start may serve with, in GiB. The engine funds the cache from the
 # room each rank has at that start (it varies by a GiB or more between starts), and PROMPT_CACHE_GIB only caps it, even
@@ -248,6 +257,12 @@ KV_SHARD="${KV_SHARD:-0}"
 # stream and nothing measurable at four or eight, token hashes identical. Both ranks must agree (the fingerprint
 # carries it). 0 (default): off, as before.
 L2PF="${L2PF:-0}"
+# KDA_PAD=1 (engine patch 0122, TF_GLM_KDA_PAD, backported from upstream; ./start-tp3.sh only): at three Sparks the KDA
+# layers' fused input stack is 8,726 / 8,341 columns wide (22 / 21 / 21 heads), not a multiple of eight, so it and
+# f_b / g_b stay bf16 on the generic kernel; the pad gives every rank's stack one eight-aligned width (8,728) so it is
+# packed and tiled like the pair's. A no-op at two and four Sparks. Every rank must agree (the fingerprint carries
+# it). 0 (default until its TP=3 gates pass): off.
+KDA_PAD="${KDA_PAD:-0}"
 VISION="${VISION:-1}"                            # --vision: images (rank 0's tower)
 VISION_MAX_IMAGES="${VISION_MAX_IMAGES:-50}"     # --vision-max-images: images per request (engine default 4, at most 64)
 # --chat-template: auto = with VISION=1, templates/glm-5.3-flash-vision.jinja (the checkpoint's own template, whose media

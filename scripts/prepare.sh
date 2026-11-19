@@ -82,19 +82,33 @@ validate_config() {
   [[ "$KV_SHARD" == 0 || ( "$KV" == fp8 && "$KV_PAGES" == on && "$DRAFTER" != mtp && "$PARALLEL" != 1 ) ]] \
     || fail E_CONFIG 'KV_SHARD=1 needs KV=fp8, KV_PAGES=on, DRAFTER=dflash2 or none, and PARALLEL=auto or above 1.'
   [[ "$L2PF" =~ ^[01]$ ]] || fail E_CONFIG 'L2PF must be 0 or 1 (TF_GLM_L2PF).'
+  [[ "$KDA_PAD" =~ ^[01]$ ]] || fail E_CONFIG 'KDA_PAD must be 0 or 1 (TF_GLM_KDA_PAD).'
   is_number "$LEARN_MIN_FREE_GIB" || fail E_CONFIG 'LEARN_MIN_FREE_GIB must be a number of GiB.'
   [[ -z "$PROMPT_CACHE_MIN_GIB" ]] || is_number "$PROMPT_CACHE_MIN_GIB" \
     || fail E_CONFIG 'PROMPT_CACHE_MIN_GIB must be empty (no check) or a number of GiB.'
   [[ "$WITH_VIDEO" =~ ^[01]$ ]] || fail E_CONFIG 'WITH_VIDEO must be 0 or 1.'
   [[ "$CONFIG_OVERLAY" =~ ^(auto|0)$ ]] || fail E_CONFIG 'CONFIG_OVERLAY must be auto or 0.'
-  if [[ "${GLM_TP4:-0}" == 1 ]]; then
-    [[ "$TP" == 4 ]] || fail E_CONFIG "TP=$TP: ./start-tp4.sh (a switch) and ./start-tp4-switchless.sh (a ring) run four Sparks (TP=4); ./start.sh runs two."
-    for key in WORKER WORKER2 WORKER3; do
-      [[ -n "${!key}" ]] || fail E_CONFIG "$key is empty: set WORKER, WORKER2 and WORKER3 to the other three Sparks' ssh targets (on a ring, in its order from this Spark) in scripts/local.sh."
-      [[ "${!key}" =~ ^[A-Za-z0-9_.@:-]+$ ]] || fail E_CONFIG "$key must be an ssh target such as user@host, with no spaces."
-    done
-    [[ "$WORKER" != "$WORKER2" && "$WORKER" != "$WORKER3" && "$WORKER2" != "$WORKER3" ]] || fail E_CONFIG 'WORKER, WORKER2 and WORKER3 must name three different Sparks.'
-    [[ "$PREFILL_REDUCE" =~ ^(gather|ring)$ ]] || fail E_CONFIG 'PREFILL_REDUCE must be gather or ring (TF_GLM_PREFILL_REDUCE on a ring; split cannot run there).'
+  if [[ "${GLM_TPN:-${GLM_TP4:-0}}" == 1 ]]; then
+    [[ "$TP" == 3 || "$TP" == 4 ]] || fail E_CONFIG "TP=$TP: ./start-tp3.sh runs three Sparks (TP=3), ./start-tp4.sh (a switch) and ./start-tp4-switchless.sh (a ring) four (TP=4); ./start.sh runs two."
+    if [[ "$TP" == 3 ]]; then
+      for key in WORKER WORKER2; do
+        [[ -n "${!key}" ]] || fail E_CONFIG "$key is empty: set WORKER and WORKER2 to the other two Sparks' ssh targets in scripts/local.sh."
+        [[ "${!key}" =~ ^[A-Za-z0-9_.@:-]+$ ]] || fail E_CONFIG "$key must be an ssh target such as user@host, with no spaces."
+      done
+      [[ "$WORKER" != "$WORKER2" ]] || fail E_CONFIG 'WORKER and WORKER2 must name two different Sparks.'
+      [[ "$PREFILL_REDUCE" =~ ^(split|gather|ring)$ ]] || fail E_CONFIG 'PREFILL_REDUCE must be split, gather or ring (TF_GLM_PREFILL_REDUCE).'
+      [[ "$TP3_NCCL" =~ ^(eager|ring)$ ]] || fail E_CONFIG 'TP3_NCCL must be eager or ring (the NCCL settings on a triangle).'
+      [[ "$ROCE_RING" == off ]] || fail E_CONFIG 'ROCE_RING=on is the four-Spark ring'"'"'s RoCE relay (engine patch 0108, world 4 only): unset ROCE_RING at three Sparks.'
+      [[ "$KV_SHARD" != 1 ]] || fail E_CONFIG 'KV_SHARD=1 runs at TP=2 only (engine patch 0114): unset KV_SHARD for a three-Spark start.'
+      [[ "$FP8" == 0 ]] || fail E_CONFIG 'FP8=1 (the ~306 GiB block FP8 release) does not fit three Sparks: use the EXL3 checkpoint (FP8=0), or four Sparks.'
+    else
+      for key in WORKER WORKER2 WORKER3; do
+        [[ -n "${!key}" ]] || fail E_CONFIG "$key is empty: set WORKER, WORKER2 and WORKER3 to the other three Sparks' ssh targets (on a ring, in its order from this Spark) in scripts/local.sh."
+        [[ "${!key}" =~ ^[A-Za-z0-9_.@:-]+$ ]] || fail E_CONFIG "$key must be an ssh target such as user@host, with no spaces."
+      done
+      [[ "$WORKER" != "$WORKER2" && "$WORKER" != "$WORKER3" && "$WORKER2" != "$WORKER3" ]] || fail E_CONFIG 'WORKER, WORKER2 and WORKER3 must name three different Sparks.'
+      [[ "$PREFILL_REDUCE" =~ ^(gather|ring)$ ]] || fail E_CONFIG 'PREFILL_REDUCE must be gather or ring (TF_GLM_PREFILL_REDUCE on a ring; split cannot run there).'
+    fi
     [[ "$RING_NCCL_ALGO" =~ ^[A-Za-z,^]+$ ]] || fail E_CONFIG 'RING_NCCL_ALGO must be an NCCL_ALGO value (Ring).'
     [[ "$ROCE_RING" =~ ^(on|off)$ ]] || fail E_CONFIG 'ROCE_RING must be on or off (TF_ROCE_RING: the four-rank RoCE ring all-gather).'
     for key in MASTER_ADDR SOCKET_IFNAME NFS_SERVER1 NFS_SERVER2 NFS_SERVER3; do
@@ -103,9 +117,13 @@ validate_config() {
     for key in NFS_MODEL_PATH NFS_DFLASH2_PATH; do
       [[ -z "${!key}" || ( "${!key}" == /* && "${!key}" != *:* && "${!key}" != *,* ) ]] || fail E_CONFIG "$key must be an absolute path without colons or commas."
     done
-    [[ "$WORKER_WEIGHTS" =~ ^(nfs|check)$ ]] || fail E_CONFIG 'WORKER_WEIGHTS must be nfs or check at four Sparks (rsync is not offered there).'
+    if [[ "$TP" == 3 ]]; then
+      [[ "$WORKER_WEIGHTS" =~ ^(rsync|nfs|check)$ ]] || fail E_CONFIG 'WORKER_WEIGHTS must be rsync, nfs or check at three Sparks.'
+    else
+      [[ "$WORKER_WEIGHTS" =~ ^(nfs|check)$ ]] || fail E_CONFIG 'WORKER_WEIGHTS must be nfs or check at four Sparks (rsync is not offered there).'
+    fi
   else
-    [[ "$TP" == 2 ]] || fail E_CONFIG "TP=$TP: ./start.sh wires two Sparks; four start with ./start-tp4.sh on a switch or ./start-tp4-switchless.sh on a ring (README \"4 Sparks\")."
+    [[ "$TP" == 2 ]] || fail E_CONFIG "TP=$TP: ./start.sh wires two Sparks; three start with ./start-tp3.sh, four with ./start-tp4.sh on a switch or ./start-tp4-switchless.sh on a ring (README \"4 Sparks\")."
     [[ -n "$WORKER" ]] || fail E_CONFIG 'WORKER is empty: set it to the second Spark'"'"'s ssh target (e.g. WORKER=zurih@10.0.34.4) in scripts/local.sh.'
     [[ "$WORKER" =~ ^[A-Za-z0-9_.@:-]+$ ]] || fail E_CONFIG 'WORKER must be an ssh target such as user@host, with no spaces.'
   fi
@@ -136,7 +154,7 @@ validate_config() {
   [[ "$ABLIT" =~ ^[01]$ ]] || fail E_CONFIG 'ABLIT must be 0 or 1.'
   [[ "$FP8" =~ ^[01]$ ]] || fail E_CONFIG 'FP8 must be 0 or 1.'
   [[ "$FP8" == 0 || "$ABLIT" == 0 ]] || fail E_CONFIG 'FP8=1 and ABLIT=1 name two checkpoints: set one.'
-  [[ "$FP8" == 0 || "${GLM_TP4:-0}" == 1 ]] || fail E_CONFIG 'FP8=1 (the ~306 GiB block FP8 release) fits four Sparks only: use ./start-tp4.sh (a switch) or ./start-tp4-switchless.sh (a ring).'
+  [[ "$FP8" == 0 || ( "${GLM_TPN:-${GLM_TP4:-0}}" == 1 && "$TP" == 4 ) ]] || fail E_CONFIG 'FP8=1 (the ~306 GiB block FP8 release) fits four Sparks only: use ./start-tp4.sh (a switch) or ./start-tp4-switchless.sh (a ring).'
   [[ "$ABLIT" == 0 || "$MODEL_SOURCE" == download ]] || fail E_CONFIG 'ABLIT=1 fetches the Ablit weights, so it needs MODEL_SOURCE=download. To serve a copy you already have, set ABLIT=0, MODEL_SOURCE=local and MODEL_DIR.'
   [[ "$MODEL_SOURCE" != download || -n "$MODEL_REVISION" ]] || fail E_CONFIG "MODEL_ID=$MODEL_ID has no pinned revision: set MODEL_REVISION."
   # A download never overwrites another checkpoint or revision: their files share names, so the result would be a mix.

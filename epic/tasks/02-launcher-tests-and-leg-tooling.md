@@ -1,6 +1,9 @@
 # 02 - Launcher tests; TP=3 `safestart` and `leg`
 
-Stage 0. Depends on: 01. Estimate: 1 day. Status: todo.
+Stage 0. Depends on: 01. Estimate: 1 day. Status: done 2026-11-19: `scripts/tests/pair-links.sh` (15 checks, written fresh: the `tp3` branch is not on the
+fork), `scripts/tests/tp3-config.sh` (20), `run.sh` lists the TP=3 and TP=4 scripts, shellcheck adds no finding over
+`main`'s 38 (it was never clean), `docs/safestart.sh` (`TP`, `PORT`, `DRY_RUN`), `docs/leg.sh` (`TP=3` ->
+`docs/speed/tp3/`, through `DEC_OUT` in `docs/dec.py`).
 
 ## Goal
 

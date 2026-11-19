@@ -31,7 +31,7 @@ MODEL = os.environ.get("M", "GLM-5.3-Flash")
 TRIALS = int(os.environ.get("TRIALS", "3"))
 MAXTOK = int(os.environ.get("MAXTOK", "250"))
 LOADS = [int(x) for x in os.environ.get("LOADS", "1,2,4").split(",")]
-OUT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "speed")
+OUT = os.environ.get("DEC_OUT") or os.path.join(os.path.dirname(os.path.abspath(__file__)), "speed")  # leg.sh: speed/tp3 at TP=3
 
 # CTXWORDS>0 prepends a deterministic filler so decode runs with a long context already in the
 # window - the regime where a shared-window cost table matters most, since round cost grows with

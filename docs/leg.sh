@@ -9,15 +9,21 @@
 #
 # Writes docs/speed/leg-<label>.log, dec-<label>.json, contract-<label>.json and prints the
 # token_sha diff against contract-baseline.json. Never edits the repo's shipped settings.
+# TP=3 (exported, or given as TP=3 among the KEY=VALUEs) restarts the three Sparks (docs/safestart.sh through
+# ./start-tp3.sh) and keeps the leg's files and its baseline under docs/speed/tp3/: TP=2 hashes are no gate there.
 set -uo pipefail
 cd "$(dirname "$(readlink -f "$0")")/.." || exit 1
 LABEL=${1:?usage: leg.sh <label> [KEY=VALUE ...]}; shift
-OUT=docs/speed; mkdir -p "$OUT"
+for kv in "$@"; do [[ "$kv" != TP=* ]] || TP=${kv#TP=}; done
+export TP=${TP:-2}
+OUT=docs/speed; [[ "$TP" != 3 ]] || OUT=docs/speed/tp3
+mkdir -p "$OUT"
+export DEC_OUT="$PWD/$OUT"
 LOG=$OUT/leg-$LABEL.log
 : > "$LOG"
 say() { printf '%s\n' "$*" | tee -a "$LOG"; }
 
-say "### leg $LABEL  $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+say "### leg $LABEL  TP=$TP  $(date -u +%Y-%m-%dT%H:%M:%SZ)"
 for kv in "$@"; do
   [[ "$kv" == *=* ]] || { say "BAD ARG $kv"; exit 2; }
   export "$kv"
@@ -39,9 +45,9 @@ say "--- contract corpus ---"
 python3 -I docs/dec.py "$LABEL" --contract 2>&1 | tee -a "$LOG"
 
 say "--- token_sha contract vs baseline ---"
-python3 -I - "$LABEL" 2>&1 <<'PY' | tee -a "$LOG"
+python3 -I - "$LABEL" "$OUT" 2>&1 <<'PY' | tee -a "$LOG"
 import json, os, sys
-d = os.path.join("docs", "speed")
+d = sys.argv[2]
 label = sys.argv[1]
 base = os.path.join(d, "contract-baseline.json")
 cur = os.path.join(d, f"contract-{label}.json")

@@ -1,0 +1,44 @@
+{
+  "schema_version": 1,
+  "generator_version": "0.3.1",
+  "project": {
+    "name": "GLM-5.3-Flash-DGX-Sparks-1104",
+    "description": "Serves GLM-5.3-Flash with the TensorFold engine on two, three or four DGX Sparks",
+    "languages": [],
+    "components": [],
+    "commands": {
+      "build": null,
+      "test": "bash scripts/tests/run.sh",
+      "run": "./start.sh"
+    },
+    "ticket_prefix": null
+  },
+  "features": {
+    "requested": {
+      "platforms": [
+        "claude",
+        "omp"
+      ],
+      "mcp": true,
+      "agents": true,
+      "github": true,
+      "scheduled_audit": true,
+      "hooks": true,
+      "permissions": false
+    },
+    "effective_by_platform": {
+      "claude": {
+        "permissions": false,
+        "agents": true,
+        "mcp": true,
+        "hooks": true
+      },
+      "omp": {
+        "permissions": false,
+        "agents": true,
+        "mcp": true,
+        "hooks": true
+      }
+    }
+  }
+}

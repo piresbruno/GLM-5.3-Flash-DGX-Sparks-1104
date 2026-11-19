@@ -15,6 +15,8 @@ where things stand.
 - `epic/`: the plan, the task files, the devbox handoff and the runbook for rank 0's Spark.
 - `scripts/tests/tp3-config.sh` runs in a sandbox without `scripts/local.sh`, so a kit's local settings no longer
   change the defaults it checks.
+- `./start-tp3.sh` reaches rank 1 again in its weights step: `tp4_prepare_worker_weights` read every worker's ssh
+  target before declaring the `local WORKER` that nodes.sh's helpers read (`scripts/tests/tp3-worker-weights.sh`).
 
 ## Business rules and constraints
 
@@ -26,6 +28,9 @@ where things stand.
 
 - `tp3-config.sh` on a kit: rank 0's `local.sh` set `NCCL_CHANNELS=8`, which made the four-Spark default check read 8
   instead of 4. The sandbox copies `scripts/` without `local.sh` and links the rest of the repository.
+- The first `DRY_RUN=1 ./start-tp3.sh` on the kit stopped after the links with `!v: unbound variable`: a `local WORKER`
+  shadowed `scripts/local.sh`'s value while `wtarget 1` read it by name (bash's dynamic scope). Rank 2 (`WORKER2`) was
+  unaffected; every `WORKER_WEIGHTS` mode hit it. Fixed, and covered for rsync, rsync with `DRY_RUN=1`, and check.
 
 ## Integration impact
 
@@ -44,4 +49,5 @@ where things stand.
 
 ## Changelog
 
+- fix(tp3): `./start-tp3.sh`'s weights step reads rank 1's ssh target before the local `WORKER` shadows it.
 - fix(tests): `tp3-config.sh` runs in a sandbox without `scripts/local.sh`, so it passes on a kit.

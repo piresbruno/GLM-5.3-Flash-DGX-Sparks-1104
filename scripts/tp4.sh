@@ -486,10 +486,15 @@ tp4_nfs_volume() {
 # checkpoint through a neighbour, and three copies of 164 GiB is what NFS is for.
 # shellcheck disable=SC2034  # WORKER: read by nodes.sh's send_dir, worker_weights_ready and wssh (dynamic scope)
 tp4_prepare_worker_weights() {
-  local i mpath dpath WORKER
+  local i mpath dpath
+  local -a targets=()
   mpath=${NFS_MODEL_PATH:-$MODEL_DIR}; dpath=${NFS_DFLASH2_PATH:-$DFLASH2_DIR}
+  # Every target is read before the local WORKER below exists: wtarget 1 reads WORKER by name, and bash's dynamic
+  # scope would hand it the (still empty) local instead of scripts/local.sh's value.
+  for i in $(worker_ids); do targets[i]=$(wtarget "$i"); done
+  local WORKER
   for i in $(worker_ids); do
-    WORKER=$(wtarget "$i")   # nodes.sh's helpers (send_dir, worker_weights_ready, wssh) read WORKER
+    WORKER=${targets[i]}   # nodes.sh's helpers (send_dir, worker_weights_ready, wssh) read WORKER
     case "$WORKER_WEIGHTS" in
       rsync)
         (( TP == 3 )) || fail E_CONFIG 'WORKER_WEIGHTS=rsync runs at three Sparks only: set nfs or check.'

@@ -1,6 +1,6 @@
 # Epic: TP=3 on three Sparks, faster than TP=2 and on a par with the Python engine
 
-Branch: `tp3-perf` (from `main` at `80be4d6`, 121 engine patches). Status: **in progress** (2026-11-19: tasks 01, 02, 04 done off the Sparks; patch 0122 written and host-tested, its window to come). Resuming elsewhere: read [HANDOFF.md](HANDOFF.md).
+Branch: `tp3-perf` (from `main` at `80be4d6`, 121 engine patches). Status: **in progress** (2026-11-19: tasks 01, 02, 04 done off the Sparks; patches 0122-0124 written and host-tested, their window to come). Resuming elsewhere: read [HANDOFF.md](HANDOFF.md).
 
 ## Why
 
@@ -103,8 +103,8 @@ takes it), and the Python engine runs `DENSE=q4`, which this recipe rejected on 
 | [04](tasks/04-engine-worktree-and-patch-workflow.md) | Engine worktree and patch workflow | 1 | | 0.5 d | done: host tests at `recipe-0121` = stale failures, the baseline (task file) |
 | [05](tasks/05-patch-0122-kda-pad.md) | Patch 0122: `TF_GLM_KDA_PAD` | 1 | 04 | 1-2 d + window | patch written, host tests pass; GPU checks and the window to do |
 | [06](tasks/06-tp3-verify-costs-and-draft-settings.md) | TP=3 verify costs and draft settings | 1 | 03, 05 | 0.5 d + window | todo |
-| [07](tasks/07-patch-0123-roce-multi.md) | Patch 0123: `TF_GLM_ROCE_MULTI` | 2 | 04 | 2-3 d + window | todo |
-| [08](tasks/08-patch-0124-sampler-rows-to-rank0.md) | Patch 0124: sampled rows to rank 0 only | 2 | 04 | 2-3 d | todo |
+| [07](tasks/07-patch-0123-roce-multi.md) | Patch 0123: `TF_GLM_ROCE_MULTI` | 2 | 04 | 2-3 d + window | patch written, host tests pass; the triangle's checks and the window to do |
+| [08](tasks/08-patch-0124-sampler-rows-to-rank0.md) | Patch 0124: sampled rows to rank 0 only | 2 | 04 | 2-3 d | patch written (verify steps only), host tests pass; fixed-seed check and profile on the kit |
 | [09](tasks/09-checkpoint-a.md) | Checkpoint A: bar 1 | 2 | 05-08 | 1 window | todo |
 | [10](tasks/10-patch-0125-64-row-window.md) | Patch 0125: 64-row shared verify window | 3 | 09 | 1-2 w | todo |
 | [11](tasks/11-checkpoint-b.md) | Checkpoint B: bar 2 at 4/6/8 streams; go / no-go for 12-14 | 3 | 10 | 1 window | todo |

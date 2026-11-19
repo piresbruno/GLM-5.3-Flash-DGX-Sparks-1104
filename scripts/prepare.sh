@@ -83,6 +83,11 @@ validate_config() {
     || fail E_CONFIG 'KV_SHARD=1 needs KV=fp8, KV_PAGES=on, DRAFTER=dflash2 or none, and PARALLEL=auto or above 1.'
   [[ "$L2PF" =~ ^[01]$ ]] || fail E_CONFIG 'L2PF must be 0 or 1 (TF_GLM_L2PF).'
   [[ "$KDA_PAD" =~ ^[01]$ ]] || fail E_CONFIG 'KDA_PAD must be 0 or 1 (TF_GLM_KDA_PAD).'
+  [[ "$SAMPLE_ROOT" =~ ^[01]$ ]] || fail E_CONFIG 'SAMPLE_ROOT must be 0 or 1 (TF_GLM_SAMPLE_ROOT).'
+  [[ "$ROCE_MULTI" =~ ^[01]$ ]] || fail E_CONFIG 'ROCE_MULTI must be 0 or 1 (TF_GLM_ROCE_MULTI).'
+  [[ "$ROCE_MULTI_KB" =~ ^[0-9]+$ ]] && (( ROCE_MULTI_KB >= 4 && ROCE_MULTI_KB <= 1024 )) \
+    || fail E_CONFIG 'ROCE_MULTI_KB must be 4 to 1024 (TF_TP_MAILBOX_MAX_KB: a RoCE write is capped at 1 MiB).'
+  [[ "$ROCE_MULTI_FALLBACK" =~ ^(error|nccl)$ ]] || fail E_CONFIG 'ROCE_MULTI_FALLBACK must be error or nccl (TF_TP_ROCE_FALLBACK).'
   is_number "$LEARN_MIN_FREE_GIB" || fail E_CONFIG 'LEARN_MIN_FREE_GIB must be a number of GiB.'
   [[ -z "$PROMPT_CACHE_MIN_GIB" ]] || is_number "$PROMPT_CACHE_MIN_GIB" \
     || fail E_CONFIG 'PROMPT_CACHE_MIN_GIB must be empty (no check) or a number of GiB.'

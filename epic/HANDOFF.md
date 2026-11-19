@@ -13,6 +13,7 @@ files in `epic/tasks/`. This file says where things stand and how to resume.
 | Task 04 | Done. Host tests at `recipe-0121` already fail 4 + 1 crash (stale tests, listed in the task file): that list is the baseline, not a regression |
 | Tasks 01, 02 | Done off the Sparks; `bash scripts/tests/run.sh` passes. The kit's `DRY_RUN=1 ./start-tp3.sh` and first LIVE wait for the window |
 | Task 05 | Patch 0122 (`TF_GLM_KDA_PAD`) written, recipe-only `chainSegs` stride bug fixed and covered; host tests = baseline. `KDA_PAD=0` by default. GPU checks to do |
+| Tasks 07, 08 | Patches 0123 (`TF_GLM_ROCE_MULTI`, plus the mailbox fatbin in the Dockerfile) and 0124 (`TF_GLM_SAMPLE_ROOT`, verify steps only) written; host tests = baseline. `ROCE_MULTI=0`, `SAMPLE_ROOT=0` by default. Settings layout now 20 |
 | Task 03 and every later measurement | Need a maintenance window on the three Sparks: **ask the user first** (see below) |
 | Status line in `~/.claude/settings.json` | Done on the Spark (unrelated side request) |
 
@@ -42,11 +43,11 @@ About 7-10 minutes on 4 cores. Compare the failure list with task 04's baseline.
 
 ## Resume order
 
-1. **Tasks 07 and 08** (patches 0123, 0124): backport and host-test the same way.
-2. **GPU checks of 0122** if a Blackwell GPU is at hand (`tf-cuda-test glm-kda-pad-split`, then `glm-shared-check`,
+1. **GPU checks of 0122** if a Blackwell GPU is at hand (`tf-cuda-test glm-kda-pad-split`, then `glm-shared-check`,
    `glm-pair-check`, `glm-lanes-concurrent` at world 3); otherwise in the window.
 3. Then ask the user for the task 03 window: `DRY_RUN=1 ./start-tp3.sh` on the kit first, then the baselines, then
-   0122 with `KDA_PAD=1`. The clean-build "no compiler warning" check is the image build on rank 0 there.
+   0122 with `KDA_PAD=1`, then 0123 (`ROCE_MULTI=1`, `tf-tp-test suite` on the triangle first) and 0124
+   (`SAMPLE_ROOT=1`, a fixed seed equal off and on). The clean-build "no compiler warning" check is the image build on rank 0 there.
 
 Line numbers in the task files were read in an engine checkout carrying an **older** 110-patch stack plus a
 drafter-MLP edit (equivalent to patch 0109). They are close, not exact, in `recipe-0121`: re-find each site by name.
@@ -62,7 +63,7 @@ drafter-MLP edit (equivalent to patch 0109). They are close, not exact, in `reci
 - **`./start.sh` is not modified.** TP=3 comes from the ring launcher (task 01).
 - **Engine changes ship as numbered patch files** `patches/engine/0122+`, each env-gated and off by default in the
   engine; `scripts/tests/patch-numbers.sh` must pass. Export with `git format-patch -1 --start-number N`.
-- **Settings and fingerprint layout is 17** on this stack (0114 set 16, 0117 set 17): new fields take 18, 19, ...
+- **Settings and fingerprint layout is 20** on this stack (0122 set 18, 0123 19, 0124 20): new fields take 21, ...
   Upstream's own layout numbers do not transfer.
 - **Gates:** TP=3 needs its own baselines (TP=2 hashes are not a gate there); a switched-off patch leaves TP=2 replies
   byte-identical. The full list is in `epic/README.md`.

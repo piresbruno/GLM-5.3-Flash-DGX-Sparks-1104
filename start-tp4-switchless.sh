@@ -74,7 +74,7 @@ URL="http://$API_HOST:$PORT"
 # --- the context window (as start.sh, keyed with the workers and the reduce mode) ---------------------------------------
 FIT_FILE="$STATE_DIR/context-fit-tp$TP.tsv"
 # three Sparks only (four keep their remembered fits): the pad changes every rank's KDA rows, and so its room
-FIT_TP3=(); (( TP != 3 )) || FIT_TP3=("$KDA_PAD" "$TP3_NCCL")
+FIT_TP3=(); (( TP != 3 )) || FIT_TP3=("$KDA_PAD" "$TP3_NCCL" "$ROCE_MULTI" "$ROCE_MULTI_KB")
 fit_key() {
   printf '%s|' "$PATCHES_HASH" "$MODEL_DIR" "$WORKER" "$WORKER2" "$WORKER3" "$TP" "$PARALLEL" "$KV" "$KV_PAGES" "$DENSE" "$HEAD" "$VISION" "$VISION_MAX_IMAGES" \
     "$DRAFTER" "$DRAFTER_BITS" "$MEMORY_RESERVE_GIB" "$PROMPT_CACHE_GIB" "$CACHE_FIRST" "$HOST_CACHE_GIB" "$PREFILL_REDUCE" "$CONTEXT_MAX" "$SERVE_EXTRA_ARGS" \
@@ -219,7 +219,7 @@ declare -a PASS_ENV=()
 MANAGED_ENV=' HOME HF_HUB_OFFLINE CUDA_DEVICE_ORDER CUDA_VISIBLE_DEVICES TENSORFOLD_NO_UPDATE_CHECK TENSORFOLD_NO_LIVE
  TENSORFOLD_MEMORY_RESERVE_GIB TF_GLM_DENSE_BITS TF_GLM_HEAD_BITS TF_GLM_CLEAR_THINKING TF_GLM_RANK TF_GLM_WORLD TF_CUDA_DEVICE
  TF_KV_PAGES TF_GLM_CE_EXCHANGE TF_GLM_ABSORB_MMA TF_GLM_W8A8 TF_GLM_HOST_CACHE_GIB TENSORFOLD_PREFILL_SHARE TENSORFOLD_PREFILL_BUDGET TF_PROMPT_CACHE_FIRST
- TF_GLM_KV_SHARD TF_GLM_L2PF TF_GLM_KDA_PAD TF_EXTRA_EOS TF_THINK_OFF_SPLIT TF_ROCE TF_ROCE_RING TF_ROCE_MAX_KB TF_ROCE_HCA TF_BIN TF_REPO TF_REF TF_GLM_PREFILL_REDUCE
+ TF_GLM_KV_SHARD TF_GLM_L2PF TF_GLM_KDA_PAD TF_GLM_SAMPLE_ROOT TF_GLM_ROCE_MULTI TF_TP_MASTER TF_TP_PORT TF_TP_KERNEL_IMAGE TF_TP_MAILBOX_MAX_KB TF_TP_ROCE_FALLBACK TF_EXTRA_EOS TF_THINK_OFF_SPLIT TF_ROCE TF_ROCE_RING TF_ROCE_MAX_KB TF_ROCE_HCA TF_BIN TF_REPO TF_REF TF_GLM_PREFILL_REDUCE
  NCCL_COMM_ID NCCL_SOCKET_IFNAME NCCL_IB_HCA NCCL_IB_GID_INDEX NCCL_MIN_NCHANNELS NCCL_MAX_NCHANNELS NCCL_ALGO NCCL_GRAPH_FILE
  NCCL_CROSS_NIC NCCL_IB_SUBNET_AWARE_ROUTING NCCL_P2P_DISABLE NCCL_SHM_DISABLE NCCL_IB_MERGE_NICS NCCL_IB_SUBNET_PREFIX_LEN
  NCCL_RUNTIME_CONNECT NCCL_CUMEM_ENABLE NCCL_CUMEM_HOST_ENABLE '
@@ -240,6 +240,15 @@ build_env_args() {
   [[ "$L2PF" != 1 ]] || ENV_ARGS+=(-e "TF_GLM_L2PF=1")
   # KDA_PAD=1 at three Sparks: engine patch 0122 pads the KDA input stack to one eight-aligned width (every rank alike)
   [[ "$KDA_PAD" != 1 || "$TP" != 3 ]] || ENV_ARGS+=(-e "TF_GLM_KDA_PAD=1")
+  # SAMPLE_ROOT=1 at three Sparks: engine patch 0124 sends a verify step's sampled rows to rank 0 alone
+  [[ "$SAMPLE_ROOT" != 1 || "$TP" != 3 ]] || ENV_ARGS+=(-e "TF_GLM_SAMPLE_ROOT=1")
+  # ROCE_MULTI=1 at three Sparks: engine patch 0123 lends the small all-gathers to fabric/tp's multirank RoCE; its
+  # bootstrap meets at rank 0 (MASTER_ADDR, NCCL_PORT + 2 and + 9), its kernel is the image's (docker/Dockerfile)
+  if [[ "$ROCE_MULTI" == 1 && "$TP" == 3 ]]; then
+    ENV_ARGS+=(-e TF_GLM_ROCE_MULTI=1 -e "TF_TP_MASTER=$MASTER_ADDR" -e "TF_TP_PORT=$((NCCL_PORT + 2))"
+               -e TF_TP_KERNEL_IMAGE=/opt/tensorfold/lib/tp_mailbox.fatbin -e "TF_TP_MAILBOX_MAX_KB=$ROCE_MULTI_KB"
+               -e "TF_TP_ROCE_FALLBACK=$ROCE_MULTI_FALLBACK")
+  fi
   # EXTRA_EOS: engine patch 0120 ends a reply at these tokens too (every rank alike)
   [[ "$EXTRA_EOS" == none ]] || ENV_ARGS+=(-e "TF_EXTRA_EOS=$EXTRA_EOS")
   # THINK_OFF_SPLIT: engine patch 0121 moves a thinking-off draft closed by </think> into reasoning_content
@@ -507,10 +516,13 @@ else
   fi
   log '[I_DISK] Enough disk space on this Spark for what is still missing.'
   tp4_worker_disk
-  python3 - "$HOST" "$PORT" "$NCCL_PORT" <<'PY' || fail E_PORT "Port $PORT or $NCCL_PORT-$((NCCL_PORT + 1)) is in use (another server?). Stop its owner or change PORT / NCCL_PORT."
+  # ROCE_MULTI=1 at three: fabric/tp's bootstrap listens on NCCL_PORT + 2 and + 9 here too
+  wire=0; [[ "$ROCE_MULTI" != 1 || "$TP" != 3 ]] || wire=1
+  python3 - "$HOST" "$PORT" "$NCCL_PORT" "$wire" <<'PY' || fail E_PORT "Port $PORT or $NCCL_PORT-$((NCCL_PORT + 1))$( (( wire == 0 )) || printf ' (or %s, %s for ROCE_MULTI)' $((NCCL_PORT + 2)) $((NCCL_PORT + 9))) is in use (another server?). Stop its owner or change PORT / NCCL_PORT."
 import socket, sys
 host, port, nccl = sys.argv[1], int(sys.argv[2]), int(sys.argv[3])
-for h, p in ((host, port), ("0.0.0.0", nccl), ("0.0.0.0", nccl + 1)):
+extra = ((("0.0.0.0", nccl + 2), ("0.0.0.0", nccl + 9)) if sys.argv[4] == "1" else ())
+for h, p in ((host, port), ("0.0.0.0", nccl), ("0.0.0.0", nccl + 1)) + extra:
     family = socket.AF_INET6 if ":" in h else socket.AF_INET
     with socket.socket(family, socket.SOCK_STREAM) as sock:
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)

@@ -129,6 +129,13 @@ RUN --mount=type=cache,id=tensorfold-zig-global,target=/root/.cache/zig \
  && echo "zig build ${steps}: $((SECONDS - start)) s" \
  && rm -f "${PREFIX}"/bin/tf-qwen35-* \
  && "${PREFIX}/native/bin/tensorfold-native" --version
+# fabric/tp's mailbox kernel for TF_GLM_ROCE_MULTI=1 (engine patch 0123; three ranks or more): `zig build install` only
+# embeds it in tf-tp-test, and the server loads it from TF_TP_KERNEL_IMAGE. The flags are zig/build/tp.zig's.
+RUN mkdir -p "${PREFIX}/lib" \
+ && /usr/local/cuda/bin/nvcc -fatbin -O3 -std=c++17 -gencode=arch=compute_120,code=sm_120 \
+      -gencode=arch=compute_121,code=sm_121 -gencode=arch=compute_90,code=compute_90 \
+      -o "${PREFIX}/lib/tp_mailbox.fatbin" zig/src/fabric/tp/mailbox.cu \
+ && ls -l "${PREFIX}/lib/tp_mailbox.fatbin"
 
 COPY --from=codecs /codecs/lib/ ${PREFIX}/native/lib/
 COPY --from=codecs /codecs/LICENSES/ ${PREFIX}/LICENSES/

@@ -1,6 +1,21 @@
 # 07 - Patch 0123: `TF_GLM_ROCE_MULTI`
 
-Stage 2. Depends on: 04. Estimate: 2-3 days, then one window. Status: todo.
+Stage 2. Depends on: 04. Estimate: 2-3 days, then one window. Status: patch written and host-tested 2026-11-19; the triangle's checks and the window to do.
+
+## Result so far
+
+- `patches/engine/0123-...patch`: the six commits squashed. Conflicts: `tp_group.zig` (allGather p2p, fast, ring,
+  multi, NCCL; `closeWires` closes all four; abort reaches p2p and multi), `cuda_ranks*.zig` (layout 18 -> 19, the
+  TF_TP_MASTER / TF_TP_KERNEL_IMAGE refusal beside 0122's), `cuda.zig` / `cuda_native.zig` (keep both).
+- Step 5 needs no code: `fits` sends only gathers up to the mailbox slot down the wire; prompt chunks stay on NCCL.
+  The paired prompt step's side stream posts its exchanges in one order, as upstream's does.
+- Step 3: `docker/Dockerfile` builds `zig/src/fabric/tp/mailbox.cu` with `tp.zig`'s flags into
+  `/opt/tensorfold/lib/tp_mailbox.fatbin` (compiled clean in the CUDA 13.3.1 toolchain, 345 KB).
+- Step 4: `ROCE_MULTI=0|1` (default 0), `ROCE_MULTI_KB=512`, `ROCE_MULTI_FALLBACK=error|nccl` (default error while
+  qualifying); at TP=3 the start passes `TF_GLM_ROCE_MULTI=1`, `TF_TP_MASTER=$MASTER_ADDR`, `TF_TP_PORT=NCCL_PORT+2`
+  (the bootstrap also takes +9; both checked free), the kernel image, the slot and the fallback. An exported
+  `TF_TP_ROCE_HCA` reaches every rank as any TF_* does, if the PCIe twins confuse the port choice.
+- Host tests (`test-roce-multi-host` included): the baseline failures only.
 
 ## Problem
 

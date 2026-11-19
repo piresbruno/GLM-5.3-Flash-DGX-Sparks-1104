@@ -1,0 +1,673 @@
+From c00181235df53c9d8bbb78b06b887d5872171fe0 Mon Sep 17 00:00:00 2001
+From: Bruno Pires <bruno@blastersystems.com>
+Date: Thu, 19 Nov 2026 19:16:07 +0000
+Subject: [PATCH 123/124] glm cuda: TF_GLM_ROCE_MULTI=1 lends the small
+ all-gathers to fabric/tp's multirank RoCE at three ranks or more (upstream
+ port)
+
+Ported onto f350cd3 + patches 0001-0122 from upstream ashhart/TensorFold:
+  1911e7bc3 build: GLM's CUDA family takes fabric/tp over the engine's own cuda module
+  81e25bb55 cuda tp_group: three ranks or more can borrow a wire for small all-gathers, every rank or none
+  b99c48a53 glm cuda: TF_GLM_ROCE_MULTI, a setting every rank must share before any opens the borrowed wire
+  65ec7eadd glm cuda: TF_GLM_ROCE_MULTI=1 lends the main stream's small all-gathers to fabric/tp's multirank RoCE, every rank or none
+  1e9975556 glm cuda: the probe's vote is lendIfAll, with a test that one rank's mismatch keeps every rank on NCCL
+  ed20c5be4 glm cuda: the probe is ready on every rank before any enters a gather, and a failed NCCL gather or wait refuses
+
+Opt-in, off by default; a no-op under three ranks. At world 3 every all-gather is NCCL's: the two-rank RoCE path is
+world 2 only and patch 0108's ring world 4 only. With the switch every rank opens fabric/tp's multirank RoCE (a queue
+pair to every peer; its mailbox kernel from TF_TP_KERNEL_IMAGE, its bootstrap at TF_TP_MASTER), probes one 4 KiB
+gather against NCCL's, and lends the wire to the group only when every rank's bytes matched; one rank failing keeps
+every rank on NCCL (TF_TP_ROCE_FALLBACK=error refuses instead). Gathers larger than the mailbox slot
+(TF_TP_MAILBOX_MAX_KB) stay on NCCL, so prompt chunks keep their route. Upstream measured at TP=3 on three GB10s:
+decode 51.2 -> 52.6 tok/s with drafts, a cold 136k prompt 1.2-1.6% slower.
+
+Recipe-side merges:
+- tp_group.zig carries 0034's peer-store gather and 0108's ring beside upstream's Multi: allGather tries p2p, fast,
+  ring, multi, then NCCL; closeWires closes all four; abort reaches p2p and multi.
+- Settings and fingerprint layout 18 -> 19 (roce_multi); the refusal without TF_TP_MASTER / TF_TP_KERNEL_IMAGE sits
+  beside 0122's kda_pad one.
+---
+ zig/build/cuda_engines.zig               |   1 +
+ zig/src/cuda/tp_group.zig                |  82 +++++-
+ zig/src/families/glm/cuda.zig            |   1 +
+ zig/src/families/glm/cuda_native.zig     |   2 +
+ zig/src/families/glm/cuda_ranks.zig      |  19 +-
+ zig/src/families/glm/cuda_ranks_test.zig |  35 ++-
+ zig/src/families/glm/cuda_roce_multi.zig | 310 +++++++++++++++++++++++
+ 7 files changed, 445 insertions(+), 5 deletions(-)
+ create mode 100644 zig/src/families/glm/cuda_roce_multi.zig
+
+diff --git a/zig/build/cuda_engines.zig b/zig/build/cuda_engines.zig
+index bb929f7a2..d6d1d367e 100644
+--- a/zig/build/cuda_engines.zig
++++ b/zig/build/cuda_engines.zig
+@@ -10,6 +10,7 @@ pub fn glmCuda(b: *std.Build, target: std.Build.ResolvedTarget, optimize: std.bu
+     m.addImport("canon", canon);
+     m.addImport("lanes", lanes);
+     m.addImport("heat", heat);
++    m.addImport("tp", @import("tp.zig").module(b, target, optimize, cuda)); // over the engine's own cuda module
+     return m;
+ }
+ 
+diff --git a/zig/src/cuda/tp_group.zig b/zig/src/cuda/tp_group.zig
+index 475303d90..47f165062 100644
+--- a/zig/src/cuda/tp_group.zig
++++ b/zig/src/cuda/tp_group.zig
+@@ -9,9 +9,20 @@ const roce_ring = @import("roce_ring.zig");
+ const p2p_report = @import("p2p_report.zig");
+ const p2p_gather = @import("p2p_gather.zig");
+ const Function = @import("module.zig").Function;
++const abi = @import("abi.zig");
+ 
+ const Stream = stream_.Stream;
+ 
++/// Three ranks or more: a wire a family borrows for small all-gathers (fabric/tp's multirank RoCE), every rank or none.
++pub const Multi = struct {
++    ctx: *anyopaque,
++    fits: *const fn (ctx: *anyopaque, bytes: usize) bool,
++    gather: *const fn (ctx: *anyopaque, s: abi.Stream, mine: abi.DevicePtr, all: abi.DevicePtr, bytes: usize) anyerror!void,
++    check: *const fn (ctx: *anyopaque) anyerror!void, // a failed gather's error, as Group.check reports it
++    abort: *const fn (ctx: *anyopaque) void, // its device waits give up, as NCCL's do on Group.abort
++    deinit: *const fn (ctx: *anyopaque) void,
++};
++
+ pub const Group = struct {
+     lib: nccl.Library,
+     comm: nccl.Comm,
+@@ -21,6 +32,7 @@ pub const Group = struct {
+     fast: ?*roce.Gather = null, // two ranks' small all-gathers by RoCE writes (openRoce), when both ranks brought it up
+     ring: ?*roce_ring.Gather = null, // four ranks on a switchless ring: the same, neighbours relaying (TF_ROCE_RING=1)
+     p2p: ?*p2p_gather.Gather = null, // two ranks on one host: one stream's small all-gathers by peer stores (openP2p)
++    multi: ?Multi = null, // three ranks or more: small all-gathers on a borrowed wire, set once every rank's probe agreed
+ 
+     /// Rank `rank` of `world` (NCCL opened at run time; NCCL_COMM_ID names rank 0's address, every rank the same).
+     pub fn open(d: *const driver.Driver, rank: usize, world: usize) !Group {
+@@ -40,20 +52,31 @@ pub const Group = struct {
+ 
+     pub fn close(g: *Group) void {
+         p2p_report.ready(); // a transport line still owed is reported before the communicator goes
+-        if (g.p2p) |p| p.deinit();
+-        if (g.fast) |f| f.deinit();
+-        if (g.ring) |r| r.deinit();
++        g.closeWires();
+         g.destroyComm();
+         g.lib.close();
+         g.* = undefined;
+     }
+ 
++    /// The wires beside NCCL: peer stores, two ranks' RoCE gathers, the four-rank ring, or a borrowed one.
++    fn closeWires(g: *Group) void {
++        if (g.p2p) |p| p.deinit();
++        g.p2p = null;
++        if (g.ring) |r| r.deinit();
++        g.ring = null;
++        if (g.fast) |f| f.deinit();
++        g.fast = null;
++        if (g.multi) |m| m.deinit(m.ctx);
++        g.multi = null;
++    }
++
+     fn destroyComm(g: *Group) void {
+         if (!g.aborted.swap(true, .acq_rel)) _ = g.lib.api.ncclCommDestroy(g.comm);
+     }
+ 
+     pub fn abort(g: *Group) void {
+         if (g.p2p) |p| p.abort(); // a peer-store gather still waiting gives up too
++        if (g.multi) |m| m.abort(m.ctx);
+         if (!g.aborted.swap(true, .acq_rel)) _ = g.lib.api.ncclCommAbort(g.comm);
+     }
+ 
+@@ -79,6 +102,7 @@ pub const Group = struct {
+         if (g.p2p) |p| try p.check();
+         if (g.fast) |f| try f.check();
+         if (g.ring) |r| try r.check();
++        if (g.multi) |m| try m.check(m.ctx);
+     }
+ 
+     /// `bytes` at `mine` from every rank into `all` in rank order (world * bytes there), on `s`.
+@@ -86,6 +110,7 @@ pub const Group = struct {
+         if (g.p2p) |p| if (p.fits(s.handle, bytes)) return p.gather(s, mine, all, bytes);
+         if (g.fast) |f| if (f.fits(bytes)) return f.gather(s.handle, mine, all, bytes);
+         if (g.ring) |r| if (r.fits(bytes)) return r.gather(s.handle, mine, all, bytes);
++        if (g.multi) |m| if (m.fits(m.ctx, bytes)) return m.gather(m.ctx, s.handle, mine, all, bytes);
+         try g.lib.check(g.lib.api.ncclAllGather(mine, all, bytes, .u8, g.comm, s.handle), "ncclAllGather");
+     }
+ 
+@@ -126,6 +151,57 @@ pub const Group = struct {
+     }
+ };
+ 
++test "three ranks send a gather the borrowed wire fits down it and the rest to NCCL; its check, abort and close follow" {
++    const Fake = struct {
++        var gathers: usize = 0;
++        var nccl_gathers: usize = 0;
++        var checks: usize = 0;
++        var aborts: usize = 0;
++        var deinits: usize = 0;
++        var failing = false;
++        fn fits(_: *anyopaque, bytes: usize) bool {
++            return bytes <= 8192;
++        }
++        fn gather(_: *anyopaque, _: abi.Stream, _: abi.DevicePtr, _: abi.DevicePtr, _: usize) anyerror!void {
++            gathers += 1;
++        }
++        fn check(_: *anyopaque) anyerror!void {
++            checks += 1;
++            if (failing) return error.PeerFailed;
++        }
++        fn abort(_: *anyopaque) void {
++            aborts += 1;
++        }
++        fn deinit(_: *anyopaque) void {
++            deinits += 1;
++        }
++        fn allGather(_: abi.DevicePtr, _: abi.DevicePtr, _: usize, _: nccl.DataType, _: nccl.Comm, _: abi.Stream) callconv(.c) nccl.Result {
++            nccl_gathers += 1;
++            return 0;
++        }
++        fn commAbort(_: nccl.Comm) callconv(.c) nccl.Result {
++            return 0;
++        }
++    };
++    var ctx: u8 = 0;
++    var group: Group = .{ .lib = undefined, .comm = null, .rank = 0, .world = 3, .multi = .{ .ctx = &ctx, .fits = Fake.fits, .gather = Fake.gather, .check = Fake.check, .abort = Fake.abort, .deinit = Fake.deinit } };
++    group.lib.api.ncclAllGather = Fake.allGather;
++    group.lib.api.ncclCommAbort = Fake.commAbort;
++    const s: Stream = .{ .d = undefined, .handle = null };
++    try group.allGather(s, 0, 0, 8192);
++    try group.allGather(s, 0, 0, 8193);
++    try std.testing.expectEqual(@as(usize, 1), Fake.gathers);
++    try std.testing.expectEqual(@as(usize, 1), Fake.nccl_gathers);
++    try group.check();
++    Fake.failing = true;
++    try std.testing.expectError(error.PeerFailed, group.check());
++    group.abort();
++    try std.testing.expectEqual(@as(usize, 1), Fake.aborts);
++    group.closeWires();
++    try std.testing.expectEqual(@as(usize, 1), Fake.deinits);
++    try std.testing.expect(group.multi == null);
++}
++
+ test "an aborted two-rank communicator is not destroyed a second time" {
+     const Fake = struct {
+         var aborts: usize = 0;
+diff --git a/zig/src/families/glm/cuda.zig b/zig/src/families/glm/cuda.zig
+index 4bbb561ce..339d45d7c 100644
+--- a/zig/src/families/glm/cuda.zig
++++ b/zig/src/families/glm/cuda.zig
+@@ -68,6 +68,7 @@ test {
+     _ = prompt_solo;
+     _ = @import("cuda_disk_image.zig");
+     _ = @import("cuda_l2pf.zig");
++    _ = @import("cuda_roce_multi.zig");
+     _ = experts;
+     _ = exl3;
+     _ = vision;
+diff --git a/zig/src/families/glm/cuda_native.zig b/zig/src/families/glm/cuda_native.zig
+index c9238a1bd..ce6b31122 100644
+--- a/zig/src/families/glm/cuda_native.zig
++++ b/zig/src/families/glm/cuda_native.zig
+@@ -292,6 +292,8 @@ fn finishRank(a: OpenArgs) !Loaded {
+         x.deinit();
+         own.e.ce = null;
+     };
++    try @import("cuda_roce_multi.zig").open(gpa, io, ctx.d, &own.group, set.roce_multi); // three ranks or more, likewise
++    errdefer if (own.group.multi) |m| m.deinit(m.ctx);
+     own.e.group = &own.group;
+     own.link = try follow.Link.init(gpa, ctx.d, &own.group.lib, own.group.comm, own.e.stream, try linkCapacity(cap, o.vision));
+     errdefer own.link.deinit();
+diff --git a/zig/src/families/glm/cuda_ranks.zig b/zig/src/families/glm/cuda_ranks.zig
+index fc7659b21..03a825d36 100644
+--- a/zig/src/families/glm/cuda_ranks.zig
++++ b/zig/src/families/glm/cuda_ranks.zig
+@@ -28,6 +28,7 @@ pub const Settings = struct {
+     numerics: Numerics = .{}, // opt-in prompt kernels that round differently (each off by default)
+     kv_shard: kv_shard.Switches = .{}, // TF_GLM_KV_SHARD and its knobs: each stream's latent rows on one rank
+     l2pf: l2pf.Options = .{}, // TF_GLM_L2PF and its knobs: a decode window's next weights read into L2 beside it
++    roce_multi: bool = false, // TF_GLM_ROCE_MULTI: 1 (three ranks or more: small all-gathers on fabric/tp's multirank RoCE beside NCCL) or 0
+ 
+     /// The settings `get` (an environment lookup) gives; `problem` names a value that is not one of the choices.
+     pub fn read(get: *const fn ([:0]const u8) ?[]const u8, problem: *[]const u8) !Settings {
+@@ -92,6 +93,12 @@ pub const Settings = struct {
+             s.chunk = rows;
+         }
+         s.l2pf = try l2pf.Options.read(get, problem);
++        if (get("TF_GLM_ROCE_MULTI")) |v| {
++            if (std.mem.eql(u8, v, "1")) s.roce_multi = true else if (std.mem.eql(u8, v, "0")) s.roce_multi = false else {
++                problem.* = "TF_GLM_ROCE_MULTI: 0 or 1";
++                return error.BadSetting;
++            }
++        }
+         if (get("TF_GLM_OVERLAP_PIECES")) |v| {
+             s.pieces = std.fmt.parseInt(u32, v, 10) catch 0;
+             if (s.pieces < 1 or s.pieces > 8) {
+@@ -153,6 +160,11 @@ pub const Settings = struct {
+             problem.* = "TF_GLM_PROMPT_K=shape requires TF_GLM_MM=1";
+             return error.BadSetting;
+         }
++        // refused here, before the weights load: the wire's bootstrap meets at rank 0, its kernel comes from the image
++        if (s.roce_multi and (get("TF_TP_MASTER") == null or get("TF_TP_KERNEL_IMAGE") == null)) {
++            problem.* = "TF_GLM_ROCE_MULTI=1 requires TF_TP_MASTER and TF_TP_KERNEL_IMAGE";
++            return error.BadSetting;
++        }
+         if (s.kda_pad and !s.tiled) {
+             problem.* = "TF_GLM_KDA_PAD=1 requires TF_GLM_MM=1 (glm_mm is what reads the padded rows)";
+             return error.BadSetting;
+@@ -183,7 +195,7 @@ pub fn environment(name: [:0]const u8) ?[]const u8 {
+ 
+ /// What every rank must agree on, as bytes the communicator carries.
+ pub const Fingerprint = extern struct {
+-    layout: u32 = 18, // this struct's version (17 had no kda_pad; 16 had no l2pf words; 15 had the chunk words or the kv_shard words alone; 14 was without chunk; 13 num3's numerics or prefill3's pair alone)
++    layout: u32 = 19, // this struct's version (18 had no roce_multi; 17 had no kda_pad; 16 had no l2pf words; 15 had the chunk words or the kv_shard words alone; 14 was without chunk; 13 num3's numerics or prefill3's pair alone)
+     world: u32,
+     rank: u32,
+     kv8: u32 = 0,
+@@ -204,6 +216,7 @@ pub const Fingerprint = extern struct {
+     max_videos: u32 = 0,
+     max_frames: u32 = 0,
+     l2pf: [4]u32 = @splat(0), // TF_GLM_L2PF's words: every rank prefetches alike, so none waits on a slower one's windows
++    roce_multi: u32 = 0, // TF_GLM_ROCE_MULTI: every rank opens the borrowed wire or none does (a lone rank would wait on it)
+     bits: u32 = 16 << 8 | 16, // TF_GLM_DENSE_BITS << 8 | TF_GLM_HEAD_BITS: every rank's matmuls read the same codes
+     numerics: u32 = 0, // Settings.numerics: every rank's prompt kernels round alike
+     kv_shard: u32 = 0, // TF_GLM_KV_SHARD and _CARRY, _TWINS (kv_shard.Switches.word; 0: off)
+@@ -237,6 +250,7 @@ pub const Fingerprint = extern struct {
+         max_videos,
+         max_frames,
+         l2pf,
++        roce_multi,
+         bits,
+         numerics,
+         kv_shard,
+@@ -275,6 +289,7 @@ pub const Fingerprint = extern struct {
+             .layers = s.layers,
+             .mtp = @intFromBool(mtp),
+             .l2pf = s.l2pf.words(),
++            .roce_multi = @intFromBool(s.roce_multi),
+             .bits = @as(u32, s.dense_bits) << 8 | s.head_bits,
+             .numerics = s.numerics.bits(),
+             .kv_shard = s.kv_shard.word(),
+@@ -317,6 +332,7 @@ pub fn mismatch(all: []const Fingerprint) ?Mismatch {
+             "max_videos",
+             "max_frames",
+             "l2pf",
++            "roce_multi",
+             "bits",
+             "numerics",
+             "kv_shard",
+@@ -432,6 +448,7 @@ fn explain(f: Fingerprint.Field) []const u8 {
+         .max_videos => "the video count limit",
+         .max_frames => "the frame limit",
+         .l2pf => "TF_GLM_L2PF, _MB, _CTAS or _PACE_GBPS",
++        .roce_multi => "TF_GLM_ROCE_MULTI",
+         .bits => "TF_GLM_DENSE_BITS or TF_GLM_HEAD_BITS",
+         .numerics => "TF_GLM_ABSORB_MMA or TF_GLM_W8A8",
+         .kv_shard => "TF_GLM_KV_SHARD, TF_GLM_KV_SHARD_CARRY or TF_GLM_KV_SHARD_TWINS",
+diff --git a/zig/src/families/glm/cuda_ranks_test.zig b/zig/src/families/glm/cuda_ranks_test.zig
+index d7dc7fee3..1b4b27e9b 100644
+--- a/zig/src/families/glm/cuda_ranks_test.zig
++++ b/zig/src/families/glm/cuda_ranks_test.zig
+@@ -186,7 +186,7 @@ test "every media limit is part of the ranks' agreement" {
+ test "every scheduling and identity field that differs stops the ranks" {
+     const zero = Fingerprint.of(2, 0, .{}, 8192, true, @splat(0), @splat(0), hashBytes("/same"));
+     const one = Fingerprint.of(2, 1, .{}, 8192, true, @splat(0), @splat(0), hashBytes("/same"));
+-    inline for (.{ "layout", "world", "rank", "pages", "split", "kda_wide", "kda_pad", "pieces", "pair", "chunk", "layers", "mtp", "vision", "video_tokens", "max_images", "max_videos", "max_frames", "numerics", "capacity", "heat_high", "heat_low" }) |name| {
++    inline for (.{ "layout", "world", "rank", "pages", "split", "kda_wide", "kda_pad", "pieces", "pair", "chunk", "layers", "mtp", "vision", "video_tokens", "max_images", "max_videos", "max_frames", "roce_multi", "numerics", "capacity", "heat_high", "heat_low" }) |name| {
+         var all = [_]Fingerprint{ zero, one };
+         @field(all[1], name) += 1;
+         try std.testing.expectEqual(@field(Fingerprint.Field, name), mismatch(&all).?.field);
+@@ -483,3 +483,36 @@ test "TF_GLM_L2PF: read with the settings, carried in the fingerprint, and ranks
+     all[1].l2pf[3] = 0; // rank 1 unpaced
+     try std.testing.expectEqual(Mismatch{ .field = .l2pf, .rank = 1 }, mismatch(&all).?);
+ }
++
++test "TF_GLM_ROCE_MULTI: off by default, 1 and 0, and refusals naming a bad value or what the wire needs" {
++    const Reader = struct {
++        fn absent(_: [:0]const u8) ?[]const u8 {
++            return null;
++        }
++        fn on(key: [:0]const u8) ?[]const u8 {
++            if (std.mem.eql(u8, key, "TF_TP_MASTER")) return "10.0.0.1";
++            if (std.mem.eql(u8, key, "TF_TP_KERNEL_IMAGE")) return "tp_mailbox.fatbin";
++            return if (std.mem.eql(u8, key, "TF_GLM_ROCE_MULTI")) "1" else null;
++        }
++        fn lone(key: [:0]const u8) ?[]const u8 {
++            if (std.mem.eql(u8, key, "TF_TP_MASTER")) return "10.0.0.1";
++            return if (std.mem.eql(u8, key, "TF_GLM_ROCE_MULTI")) "1" else null;
++        }
++        fn off(key: [:0]const u8) ?[]const u8 {
++            return if (std.mem.eql(u8, key, "TF_GLM_ROCE_MULTI")) "0" else null;
++        }
++        fn bad(key: [:0]const u8) ?[]const u8 {
++            return if (std.mem.eql(u8, key, "TF_GLM_ROCE_MULTI")) "yes" else null;
++        }
++    };
++    var problem: []const u8 = "";
++    try std.testing.expect(!(try Settings.read(Reader.absent, &problem)).roce_multi);
++    try std.testing.expect((try Settings.read(Reader.on, &problem)).roce_multi);
++    try std.testing.expect(!(try Settings.read(Reader.off, &problem)).roce_multi);
++    try std.testing.expectError(error.BadSetting, Settings.read(Reader.bad, &problem));
++    try std.testing.expectEqualStrings("TF_GLM_ROCE_MULTI: 0 or 1", problem);
++    try std.testing.expectError(error.BadSetting, Settings.read(Reader.lone, &problem));
++    try std.testing.expectEqualStrings("TF_GLM_ROCE_MULTI=1 requires TF_TP_MASTER and TF_TP_KERNEL_IMAGE", problem);
++    const h: [32]u8 = @splat(0);
++    try std.testing.expectEqual(@as(u32, 1), Fingerprint.of(3, 0, .{ .roce_multi = true }, 8192, true, h, h, h).roce_multi);
++}
+diff --git a/zig/src/families/glm/cuda_roce_multi.zig b/zig/src/families/glm/cuda_roce_multi.zig
+new file mode 100644
+index 000000000..5376cbb9c
+--- /dev/null
++++ b/zig/src/families/glm/cuda_roce_multi.zig
+@@ -0,0 +1,310 @@
++//! TF_GLM_ROCE_MULTI=1 at three ranks or more: the main stream's small all-gathers on fabric/tp's multirank RoCE.
++const std = @import("std");
++const builtin = @import("builtin");
++const cuda = @import("cuda");
++const tp = @import("tp");
++
++const Group = cuda.tp_group.Group;
++
++/// Every rank opens the wire and lends it to `g` once every probe matched NCCL; one rank failing leaves all on NCCL.
++pub fn open(gpa: std.mem.Allocator, io: std.Io, d: *const cuda.Driver, g: *Group, on: bool) !void {
++    if (comptime builtin.os.tag != .linux) return; // fabric/tp's sockets and verbs
++    if (!on) return;
++    if (g.world < 3) {
++        if (g.rank == 0) std.log.info("TF_GLM_ROCE_MULTI=1 takes three ranks or more; {d} keep their own route", .{g.world});
++        return;
++    }
++    var cfg = try tp.Config.fromEnv(); // TF_TP_MASTER, TF_TP_PORT and the wire's settings: a bad value refuses
++    cfg.rank = @intCast(g.rank);
++    cfg.world = @intCast(g.world);
++    var entered = false; // this rank's probe enqueued NCCL's gather
++    const w = borrow(gpa, io, d, g, cfg, &entered) catch |err| {
++        // TF_TP_ROCE_FALLBACK=error refuses rather than run on NCCL, as does a failure NCCL's order may not survive
++        if (cfg.roce_fallback == .@"error" or !fallsBack(err, entered)) return err;
++        std.log.warn("rank {d}: TF_GLM_ROCE_MULTI=1, but the wire did not open ({s}); NCCL keeps the small gathers", .{ g.rank, @errorName(err) });
++        return;
++    };
++    g.multi = .{ .ctx = w, .fits = fits, .gather = gather, .check = check, .abort = abort, .deinit = deinit };
++}
++
++/// Whether NCCL keeps the small gathers after `err`: no gather of the probe's entered yet, or every rank's verdict.
++fn fallsBack(err: anyerror, entered: bool) bool {
++    return !entered or err == error.ProbeMismatch;
++}
++
++/// fabric/tp's bootstrap, ports, wire and kernel, and a probe against the group's NCCL: each step every rank's or none.
++fn borrow(gpa: std.mem.Allocator, io: std.Io, d: *const cuda.Driver, g: *const Group, cfg: tp.Config, entered: *bool) !*Wire {
++    const path = std.mem.span(std.c.getenv("TF_TP_KERNEL_IMAGE") orelse return error.NoKernelImage);
++    const image = try std.Io.Dir.cwd().readFileAllocOptions(io, path, gpa, .limited(1 << 26), .@"16", null);
++    defer gpa.free(image); // the module copies it at load
++    var b = try tp.Bootstrap.open(cfg);
++    defer b.close(); // the wire is connected by the end of init
++    try b.agree(&cfg.digest(), "fabric/tp settings (TF_TP_MAILBOX_MAX_KB, TF_TP_ROCE_WIRE, TF_TP_ROCE_FALLBACK)");
++    var specs: [tp.roce_verbs.max_hcas]tp.roce_verbs.HcaSpec = undefined;
++    var picked = true;
++    const n = if (cfg.roce_wire == .verbs) tp.roce_pick.resolve(cfg, &b, &specs) catch blk: {
++        picked = false;
++        break :blk 0;
++    } else 0;
++    if (!try everyRank(&b, picked)) return error.RoceHcaSelectionFailed;
++    const r = try tp.roce_multi.Roce.init(d, &b, image, .{ .wire = if (cfg.roce_wire == .shm) .shm else .verbs, .hcas = specs[0..n], .traffic_class = cfg.roce_tc, .cpu = cfg.roce_cpu, .max_bytes = cfg.mailbox_max_bytes, .timeout_ns = cfg.mailbox_timeout_ns, .fast = cfg.roce_fast, .blocks = cfg.roce_blocks });
++    errdefer r.deinit();
++    const w = try gpa.create(Wire); // before the last vote: nothing after it can fail
++    errdefer gpa.destroy(w);
++    w.* = .{ .gpa = gpa, .r = r, .rank = g.rank };
++    var p: Probe = .{ .gpa = gpa, .d = d, .g = g, .r = r };
++    defer p.deinit();
++    try vote(&b, p.steps(), entered);
++    var line: [384]u8 = undefined;
++    std.log.info("rank {d}: TF_GLM_ROCE_MULTI: gathers up to {d} KiB a rank on the wire, its probe equal to NCCL's: {s}", .{ g.rank, r.slot_bytes / 1024, r.describeLink(&line) });
++    return w;
++}
++
++/// A rank's probe in steps (made ready before any gather, both gathers, the wait, the verdict); a test fails any.
++const Steps = struct {
++    ctx: *anyopaque,
++    prepare: *const fn (*anyopaque) anyerror!void,
++    wire: *const fn (*anyopaque) anyerror!void,
++    nccl: *const fn (*anyopaque) anyerror!void,
++    wait: *const fn (*anyopaque) anyerror!void,
++    equal: *const fn (*anyopaque) bool,
++};
++
++/// Every rank is ready before any enters a gather, then all enter both; a failed NCCL gather or wait refuses at once.
++fn vote(b: *tp.Bootstrap, s: Steps, entered: *bool) !void {
++    const ready = if (s.prepare(s.ctx)) |_| true else |_| false;
++    if (!try everyRank(b, ready)) return error.ProbeUnprepared;
++    const wired = if (s.wire(s.ctx)) |_| true else |_| false; // NCCL's gather follows it either way
++    entered.* = true;
++    try s.nccl(s.ctx);
++    try s.wait(s.ctx);
++    try lendIfAll(b, wired and s.equal(s.ctx));
++}
++
++/// One 4 KiB gather in place, on the wire and on the group's NCCL (no wire lent yet): every byte must be equal.
++const Probe = struct {
++    gpa: std.mem.Allocator,
++    d: *const cuda.Driver,
++    g: *const Group,
++    r: *tp.roce_multi.Roce,
++    a: ?cuda.DeviceBuffer = null, // the wire's rows, then NCCL's
++    s: ?cuda.Stream = null,
++
++    const n = 4096;
++
++    fn deinit(p: *Probe) void {
++        if (p.a) |*a| a.free();
++        if (p.s) |*s| s.deinit();
++    }
++
++    fn steps(p: *Probe) Steps {
++        return .{ .ctx = p, .prepare = prepare, .wire = wire, .nccl = nccl, .wait = wait, .equal = equal };
++    }
++
++    fn from(ctx: *anyopaque) *Probe {
++        return @ptrCast(@alignCast(ctx));
++    }
++
++    fn prepare(ctx: *anyopaque) anyerror!void {
++        const p = from(ctx);
++        const world = p.g.world;
++        p.a = try cuda.DeviceBuffer.alloc(p.d, 2 * world * n);
++        p.s = try cuda.Stream.init(p.d, true);
++        var mine: [n]u8 = undefined;
++        tp.reference.fill(&mine, .bf16, @intCast(p.g.rank), 0x7072_6f62);
++        try p.a.?.uploadAsync(p.g.rank * n, &mine, p.s.?.handle);
++        try p.a.?.uploadAsync((world + p.g.rank) * n, &mine, p.s.?.handle);
++        try p.s.?.synchronize(); // the rows are up before this rank says it is ready
++    }
++
++    fn wire(ctx: *anyopaque) anyerror!void {
++        const p = from(ctx);
++        try p.r.allGatherBytes(p.a.?.ptr + p.g.rank * n, p.a.?.ptr, n, p.s.?.handle);
++    }
++
++    fn nccl(ctx: *anyopaque) anyerror!void {
++        const p = from(ctx);
++        try p.g.allGather(p.s.?, p.a.?.ptr + (p.g.world + p.g.rank) * n, p.a.?.ptr + p.g.world * n, n);
++    }
++
++    fn wait(ctx: *anyopaque) anyerror!void {
++        try from(ctx).s.?.synchronize();
++    }
++
++    fn equal(ctx: *anyopaque) bool {
++        const p = from(ctx);
++        const world = p.g.world;
++        p.r.check() catch return false;
++        const got = p.gpa.alloc(u8, 2 * world * n) catch return false;
++        defer p.gpa.free(got);
++        p.a.?.download(0, got) catch return false;
++        const same = std.mem.eql(u8, got[0 .. world * n], got[world * n ..]);
++        if (!same) std.log.warn("rank {d}: TF_GLM_ROCE_MULTI's probe: the wire's gather DIFFERS from NCCL's", .{p.g.rank});
++        return same;
++    }
++};
++
++/// The wire is lent only when every rank's probe matched NCCL's bytes: one rank's mismatch keeps every rank on NCCL.
++fn lendIfAll(b: *tp.Bootstrap, good: bool) !void {
++    if (!try everyRank(b, good)) return error.ProbeMismatch;
++}
++
++/// Every rank's vote over the bootstrap, the same answer on every rank.
++fn everyRank(b: *tp.Bootstrap, yes: bool) !bool {
++    var blobs: [tp.bootstrap.max_ranks][]const u8 = undefined;
++    var buf: [tp.bootstrap.max_ranks]u8 = undefined;
++    return allSaid(try b.allGather(&.{@intFromBool(yes)}, &buf, &blobs));
++}
++
++/// Whether every rank's one-byte vote is yes: every rank reads the same votes, so every rank decides alike.
++fn allSaid(votes: []const []const u8) bool {
++    for (votes) |v| if (v.len != 1 or v[0] != 1) return false;
++    return true;
++}
++
++/// The lent wire and what went down it, for its account at the end.
++const Wire = struct {
++    gpa: std.mem.Allocator,
++    r: *tp.roce_multi.Roce,
++    rank: usize,
++    gathers: std.atomic.Value(u64) = .init(0),
++    bytes: std.atomic.Value(u64) = .init(0),
++};
++
++fn of(ctx: *anyopaque) *Wire {
++    return @ptrCast(@alignCast(ctx));
++}
++
++fn fits(ctx: *anyopaque, bytes: usize) bool {
++    return of(ctx).r.fits(bytes);
++}
++
++fn gather(ctx: *anyopaque, s: cuda.abi.Stream, mine: cuda.abi.DevicePtr, all: cuda.abi.DevicePtr, bytes: usize) anyerror!void {
++    const w = of(ctx);
++    try w.r.allGatherBytes(mine, all, bytes, s);
++    // once: the engine's own gathers take the wire (a server's stop exits before any close prints the account)
++    if (w.gathers.fetchAdd(1, .monotonic) == 0) std.log.info("rank {d}: TF_GLM_ROCE_MULTI: the first gather is on the wire ({d} bytes a rank)", .{ w.rank, bytes });
++    _ = w.bytes.fetchAdd(bytes, .monotonic);
++}
++
++fn check(ctx: *anyopaque) anyerror!void {
++    return of(ctx).r.check(); // a failed wait's line names the rank and seq it waited on
++}
++
++fn abort(ctx: *anyopaque) void {
++    const w = of(ctx);
++    w.r.abort();
++    report(w, "aborted");
++}
++
++fn deinit(ctx: *anyopaque) void {
++    const w = of(ctx);
++    report(w, "closing");
++    w.r.deinit();
++    w.gpa.destroy(w);
++}
++
++/// Gathers, bytes, the proxy's last post and failure, each HCA's QPs: a rank whose posts stop short is the stuck one.
++fn report(w: *const Wire, when: []const u8) void {
++    var line: [384]u8 = undefined;
++    const r = w.r;
++    const fmt = "rank {d}: TF_GLM_ROCE_MULTI {s}: {d} gathers, {d} bytes, posted to seq {d}, failed {s}{s}; {s}";
++    const args = .{ w.rank, when, w.gathers.load(.monotonic), w.bytes.load(.monotonic), r.last_seq, if (r.failed()) "yes " else "no", r.proxyError(), r.describeLink(&line) };
++    if (r.failed()) std.log.warn(fmt, args) else std.log.info(fmt, args);
++}
++
++test "TF_GLM_ROCE_MULTI off, or under three ranks: the group keeps its own route and nothing opens" {
++    var g: Group = .{ .lib = undefined, .comm = null, .rank = 0, .world = 3 };
++    try open(std.testing.allocator, undefined, undefined, &g, false);
++    try std.testing.expect(g.multi == null);
++    g.world = 2;
++    try open(std.testing.allocator, undefined, undefined, &g, true);
++    try std.testing.expect(g.multi == null);
++}
++
++test "the wire is lent only when every rank's vote is one byte saying yes" {
++    try std.testing.expect(allSaid(&.{ &.{1}, &.{1}, &.{1} }));
++    try std.testing.expect(!allSaid(&.{ &.{1}, &.{0}, &.{1} }));
++    try std.testing.expect(!allSaid(&.{ &.{1}, &.{}, &.{1} }));
++    try std.testing.expect(!allSaid(&.{ &.{1}, &.{ 1, 1 }, &.{1} }));
++}
++
++test "a probe step failing on any one rank: every rank refuses, or every rank keeps NCCL, and none enters a gather unready" {
++    if (comptime builtin.os.tag != .linux) return error.SkipZigTest;
++    const Point = enum { none, prepare, wire, nccl, wait, equal };
++    const Run = struct {
++        port: u16,
++        lfd: tp.sock.Fd,
++        at: Point,
++        on: u32,
++        took: [6]std.atomic.Value(u32) = @splat(.init(0)),
++        errs: [3]?anyerror = .{ null, null, null },
++        entered: [3]bool = .{ false, false, false },
++
++        const R = @This();
++        const Rank = struct {
++            run: *R,
++            me: u32,
++
++            fn step(k: *Rank, p: Point) anyerror!void {
++                _ = k.run.took[@backingInt(p)].fetchAdd(1, .monotonic);
++                if (k.run.at == p and k.run.on == k.me) return error.Injected;
++            }
++            fn from(ctx: *anyopaque) *Rank {
++                return @ptrCast(@alignCast(ctx));
++            }
++            fn prepare(ctx: *anyopaque) anyerror!void {
++                return from(ctx).step(.prepare);
++            }
++            fn wire(ctx: *anyopaque) anyerror!void {
++                return from(ctx).step(.wire);
++            }
++            fn nccl(ctx: *anyopaque) anyerror!void {
++                return from(ctx).step(.nccl);
++            }
++            fn wait(ctx: *anyopaque) anyerror!void {
++                return from(ctx).step(.wait);
++            }
++            fn equal(ctx: *anyopaque) bool {
++                from(ctx).step(.equal) catch return false;
++                return true;
++            }
++        };
++
++        fn rank(run: *@This(), me: u32) void {
++            var b = (if (me == 0) tp.Bootstrap.acceptOn(run.lfd, 3, 5 * std.time.ns_per_s) else tp.Bootstrap.open(.{ .world = 3, .rank = me, .link_port = run.port, .connect_timeout_ns = 5 * std.time.ns_per_s })) catch |e| {
++                run.errs[me] = e;
++                return;
++            };
++            defer b.close();
++            var k: Rank = .{ .run = run, .me = me };
++            vote(&b, .{ .ctx = &k, .prepare = Rank.prepare, .wire = Rank.wire, .nccl = Rank.nccl, .wait = Rank.wait, .equal = Rank.equal }, &run.entered[me]) catch |e| {
++                run.errs[me] = e;
++            };
++        }
++    };
++    const Verdict = enum { lend, nccl, refuse };
++    for (std.enums.values(Point)) |at| for (0..3) |on| {
++        if (at == .none and on > 0) continue;
++        const l = try tp.bootstrap.testListener();
++        defer tp.sock.close(l.fd);
++        var run: Run = .{ .port = l.port, .lfd = l.fd, .at = at, .on = @intCast(on) };
++        var t: [2]std.Thread = undefined;
++        for (&t, 1..) |*x, me| x.* = try std.Thread.spawn(.{}, Run.rank, .{ &run, @as(u32, @intCast(me)) });
++        run.rank(0);
++        for (t) |x| x.join();
++        const want: Verdict = switch (at) {
++            .none => .lend,
++            .prepare, .wire, .equal => .nccl,
++            .nccl, .wait => .refuse,
++        };
++        for (run.errs, run.entered) |e, entered| {
++            const got: Verdict = if (e) |err| (if (fallsBack(err, entered)) .nccl else .refuse) else .lend;
++            try std.testing.expectEqual(want, got);
++        }
++        // unready anywhere: no rank entered a gather; past that, every rank entered NCCL's, the wire failing or not
++        const gathers: u32 = if (at == .prepare) 0 else 3;
++        try std.testing.expectEqual(gathers, run.took[@backingInt(Point.wire)].load(.monotonic));
++        try std.testing.expectEqual(gathers, run.took[@backingInt(Point.nccl)].load(.monotonic));
++    };
++}
+-- 
+2.55.0
+

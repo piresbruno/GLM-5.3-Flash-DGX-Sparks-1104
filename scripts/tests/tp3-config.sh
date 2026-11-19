@@ -42,6 +42,11 @@ check 'KV_SHARD=1 is refused by name' 'refused:KV_SHARD=1' KV_SHARD=1
 check 'TP=5 is refused' 'refused:TP=5' TP=5
 check 'KDA_PAD=1' accepted KDA_PAD=1
 check 'KDA_PAD=on is refused' refused:KDA_PAD KDA_PAD=on
+check 'ROCE_MULTI=1' accepted ROCE_MULTI=1
+check 'SAMPLE_ROOT=1' accepted SAMPLE_ROOT=1
+check 'SAMPLE_ROOT=yes is refused' refused:SAMPLE_ROOT SAMPLE_ROOT=yes
+check 'ROCE_MULTI_KB=2048 is refused' refused:ROCE_MULTI_KB ROCE_MULTI_KB=2048
+check 'ROCE_MULTI_FALLBACK=warn is refused' refused:ROCE_MULTI_FALLBACK ROCE_MULTI_FALLBACK=warn
 # four Sparks beside it: WORKER3 required, split and rsync refused, FP8 accepted
 check 'four: WORKER3 required' refused:WORKER3 TP=4 WORKER_WEIGHTS=nfs
 check 'four: defaults with nfs' 'accepted:gather 4 bf16 8 eager' TP=4 WORKER3=a@spark-d WORKER_WEIGHTS=nfs

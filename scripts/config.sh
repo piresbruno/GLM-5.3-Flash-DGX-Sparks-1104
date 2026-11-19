@@ -263,6 +263,19 @@ L2PF="${L2PF:-0}"
 # packed and tiled like the pair's. A no-op at two and four Sparks. Every rank must agree (the fingerprint carries
 # it). 0 (default until its TP=3 gates pass): off.
 KDA_PAD="${KDA_PAD:-0}"
+# ROCE_MULTI=1 (engine patch 0123, TF_GLM_ROCE_MULTI, backported from upstream; ./start-tp3.sh only): the decode and
+# verify all-gathers of up to ROCE_MULTI_KB a rank go over fabric/tp's multirank RoCE (a queue pair to every peer, the
+# image's tp_mailbox.fatbin) instead of NCCL, which carries every gather at three Sparks. The wire is lent only when
+# every rank's probe matched NCCL's bytes. ROCE_MULTI_FALLBACK: error (stop when the wire does not open, while it is
+# being qualified) or nccl (go on with NCCL). 0 (default until its TP=3 gates pass): NCCL carries every exchange.
+ROCE_MULTI="${ROCE_MULTI:-0}"
+ROCE_MULTI_KB="${ROCE_MULTI_KB:-512}"            # TF_TP_MAILBOX_MAX_KB: 32 verify rows x 16 KiB; at most 1024
+ROCE_MULTI_FALLBACK="${ROCE_MULTI_FALLBACK:-error}"
+# SAMPLE_ROOT=1 (engine patch 0124, TF_GLM_SAMPLE_ROOT; ./start-tp3.sh only): a verify step's sampled rows, whose
+# draws only rank 0 reads, go to rank 0 alone, one grouped send a follower, instead of a broadcast a row a rank to
+# every rank (24 NCCL calls a round at eight rows and three ranks). Same logits, same draw. Every rank must agree.
+# 0 (default until its TP=3 measurement): the broadcasts, as before.
+SAMPLE_ROOT="${SAMPLE_ROOT:-0}"
 VISION="${VISION:-1}"                            # --vision: images (rank 0's tower)
 VISION_MAX_IMAGES="${VISION_MAX_IMAGES:-50}"     # --vision-max-images: images per request (engine default 4, at most 64)
 # --chat-template: auto = with VISION=1, templates/glm-5.3-flash-vision.jinja (the checkpoint's own template, whose media

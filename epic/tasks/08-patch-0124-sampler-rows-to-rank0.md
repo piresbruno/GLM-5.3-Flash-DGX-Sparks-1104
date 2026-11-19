@@ -1,6 +1,21 @@
 # 08 - Patch 0124: sampled rows to rank 0 only
 
-Stage 2. Depends on: 04. Estimate: 2-3 days. Status: todo.
+Stage 2. Depends on: 04. Estimate: 2-3 days. Status: patch written and host-tested 2026-11-19; the fixed-seed equality and the profile need the kit.
+
+## Result so far
+
+- The premise needed narrowing: followers skip the draw only in verify steps (`.verify`, `.shared`:
+  `discard_draws`). In prefill, chunk, redraw and draft steps every rank draws itself with the same seed and needs
+  whole rows; structured output and prompt logprobs read whole rows everywhere. So `TF_GLM_SAMPLE_ROOT=1` applies
+  to verify steps only: `Engine.in_verify` (set by `verify` / `verifyShared` on every rank) and the setting choose
+  `To.root`; everything else keeps the broadcasts. That is the decode hot path, where the 24 calls a round were.
+- Root mode: a follower `ncclSend`s its contiguous `[rows][span]` logits; rank 0 `ncclRecv`s each follower's block
+  into a stage (rows x vocab bf16, ~10 MB a rank) in one group and copies it into its columns (`cuMemcpy2DAsync`).
+- The new mode is opt-in (`TF_GLM_SAMPLE_ROOT`, the stack's rule) rather than the task's `TF_GLM_SAMPLE_SPREAD=1`
+  opt-out; in the fingerprint, layout 19 -> 20. Launcher: `SAMPLE_ROOT=0|1`, passed at TP=3 only.
+- Tests: the group against a recording NCCL at TP=3 (uneven spans), the settings case. To do on the kit: a fixed
+  seed's sampled replies equal with the switch off and on at TP=2 and TP=3, and the sampler section's profile at
+  4 and 8 sampled streams (drop the patch if it does not move).
 
 ## Problem
 

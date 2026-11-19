@@ -1,6 +1,24 @@
 # 04 - Engine worktree and patch workflow
 
-Stage 1. Depends on: nothing. Estimate: half a day. Status: in progress (steps 1-2 done by `epic/engine-worktree.sh`; steps 3-5 to do).
+Stage 1. Depends on: nothing. Estimate: half a day. Status: done 2026-11-19 (devbox, x86_64, no GPU).
+
+## Result
+
+- `recipe-0121` applies with no rejects (tree `e32afdf2...`). Host tests in the `toolchain` stage built for x86_64
+  (`ZIG_ARCH=x86_64`, zig 0.17.0 sha256 `1cbe9df9...`): **4,168 / 4,182 passed, 4 failed, 1 crashed, 9 skipped**.
+  The failures are stale tests in the stack, present before any epic change, and are the baseline every later patch
+  is compared against (the same list, nothing new):
+  - `cuda_ranks_test.zig:421` expects fingerprint layout 15 (0114 / 0117 moved it to 17 without updating it);
+  - `cuda_native.zig:522` `capacity(330529)` expects 330,560, gets 330,624;
+  - `cuda_mm` `TF_GLM_MM_STAGES` test logs an error it does not expect;
+  - `cuda_weights.zig:678` crashes (general protection reading `L.w.config` in `declaredAs`);
+  - `draft_sources_cuda_test` "CUDA GLM distinguishes its checkpoint head from loaded DFlash2" fails;
+  - `glm_fp8_pages_host.zig:760` returns `ExpectedHit`.
+  (Zig's summary counts these as 4 failed + 1 crashed; the `MM_STAGES` one fails by its logged error.)
+- The clean-build "no compiler warning" check (the full `native grammar install` build with nvcc) is not done on the
+  devbox; it belongs to the image build on rank 0 in the window.
+- Workflow proven on patch 0122: squash, `git format-patch -1 --start-number N --filename-max-length=120`,
+  `scripts/tests/patch-numbers.sh` passes, and `epic/engine-worktree.sh` rebuilds the tested tree exactly.
 
 ## Goal
 

@@ -1,6 +1,22 @@
 # 05 - Patch 0122: `TF_GLM_KDA_PAD`
 
-Stage 1. Depends on: 04. Estimate: 1-2 days, then one window. Status: todo. **The largest single gain in the epic.**
+Stage 1. Depends on: 04. Estimate: 1-2 days, then one window. Status: patch written and host-tested 2026-11-19; GPU checks (no GPU on the devbox) and the window to do. **The largest single gain in the epic.**
+
+## Result so far
+
+- `patches/engine/0122-glm-cuda-TF_GLM_KDA_PAD-1-...patch`: the 11 commits, squashed. 8 cherry-picked cleanly; the
+  three conflicts were `zig/tests/cuda/main.zig` (keep both) and `cuda_ranks*.zig` (only the `kda_pad` refusal;
+  layout 17 -> 18; upstream's `roce_multi` / `kv_host` / `solo` names dropped).
+- Step 2 bug confirmed and fixed: `chainSegs` strode by `width()`; now `segChain()` with `matWidth()`. The extended
+  `cuda_kda_tp3_test` fails on the old line (expected 8728, found 8726) and passes on the fix. It also covers step 3:
+  with the pad the TP=3 stack is tiled and f_b + g_b take the pair launch.
+- Step 4: no identity change needed (`State.proj` is arena slot 3, inside each rank's prefix, whose size is in the
+  store's facts; the pad changes it on every TP=3 rank).
+- Step 5: `KDA_PAD=0|1` in `config.sh` (default 0 until gated), passed as `TF_GLM_KDA_PAD=1` at TP=3 only; part of
+  the TP=3 fit key.
+- Host tests: the same baseline failures as `recipe-0121`, nothing new; 4,169 / 4,183 passed.
+- To do: `tf-cuda-test glm-kda-pad-split`, `glm-shared-check`, `glm-pair-check`, `glm-lanes-concurrent` at world 3
+  on a GPU; then the measurement window; then `KDA_PAD=1` by default at TP=3.
 
 ## Problem
 

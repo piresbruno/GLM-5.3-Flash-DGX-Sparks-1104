@@ -1,16 +1,18 @@
 # Handoff: TP=3 epic, for the agent resuming on a devbox
 
-Written 2026-11-19 at the end of the planning session. Read `epic/README.md` first (goals, causes, gates), then the task
+Written 2026-11-19 at the end of the planning session; updated the same day after the first devbox session (x86_64,
+4 cores, no GPU): tasks 01, 02 and 04 done, patch 0122 written and host-tested. Read `epic/README.md` first (goals, causes, gates), then the task
 files in `epic/tasks/`. This file says where things stand and how to resume.
 
 ## Where things are
 
 | Item | State |
 | --- | --- |
-| Recipe branch | `tp3-perf` on the fork `piresbruno/GLM-5.3-Flash-DGX-Sparks-1104` (upstream `MiaAI-Lab/GLM-5.3-Flash-DGX-Sparks-1104`, where the user has read access only). Cut from `main` at `80be4d6`. Holds `epic/` only: **no code changed yet** |
-| Engine tree | Not on any remote. It is TensorFold at the recipe's pin (`TF_REF` in `scripts/config.sh`, `f350cd3e`) plus the 121 `patches/engine/*.patch`, rebuilt exactly by `epic/engine-worktree.sh` (tree hash `e32afdf2d130d990054268922f1485eff7260385` at tag `recipe-0121`, checked twice) |
-| Task 04 | Half done: the tree applies with no rejects (89 mail-format patches via `git am`, 32 plain diffs via `git apply`). **Not built, host tests not run** |
-| Tasks 01, 02 | Not started |
+| Recipe branch | `tp3-perf` on the fork `piresbruno/GLM-5.3-Flash-DGX-Sparks-1104` (upstream `MiaAI-Lab/GLM-5.3-Flash-DGX-Sparks-1104`, where the user has read access only). Cut from `main` at `80be4d6`. Holds `epic/`, the TP=3 launcher and patch 0122 |
+| Engine tree | Not on any remote. TensorFold `f350cd3e` plus `patches/engine/*.patch`, rebuilt exactly by `epic/engine-worktree.sh`: tree `e32afdf2d130...` at `recipe-0121`, `dadae63bfc7d...` at `recipe-0122` (checked from upstream) |
+| Task 04 | Done. Host tests at `recipe-0121` already fail 4 + 1 crash (stale tests, listed in the task file): that list is the baseline, not a regression |
+| Tasks 01, 02 | Done off the Sparks; `bash scripts/tests/run.sh` passes. The kit's `DRY_RUN=1 ./start-tp3.sh` and first LIVE wait for the window |
+| Task 05 | Patch 0122 (`TF_GLM_KDA_PAD`) written, recipe-only `chainSegs` stride bug fixed and covered; host tests = baseline. `KDA_PAD=0` by default. GPU checks to do |
 | Task 03 and every later measurement | Need a maintenance window on the three Sparks: **ask the user first** (see below) |
 | Status line in `~/.claude/settings.json` | Done on the Spark (unrelated side request) |
 
@@ -25,17 +27,26 @@ git -C ../tf-tp3 log --oneline -1 recipe-0121
 git -C ../tf-tp3 rev-parse 'recipe-0121^{tree}'   # expect e32afdf2d130...
 ```
 
+## Host tests on a devbox
+
+The `toolchain` stage builds on x86_64 too, and the host tests need no nvcc or GPU:
+
+```sh
+docker build -f docker/Dockerfile --target toolchain --build-arg ZIG_ARCH=x86_64 \
+  --build-arg ZIG_SHA256=1cbe9df9f27e6b78d14ccbca43b6703a404ef79ef1c463de901d7f088d4e2026 -t tf-toolchain-x86:0.17.0 docker/
+docker run --rm --user "$(id -u):$(id -g)" -e ZIG_GLOBAL_CACHE_DIR=/c -e HOME=/tmp -v tf-zig-cache:/c -v "$PWD:/src" -w /src \
+  tf-toolchain-x86:0.17.0 zig build test-glm-tp3-host test-glm-fp8-kv-host test-glm-exl3-host test-cuda-host --summary failures
+```
+
+About 7-10 minutes on 4 cores. Compare the failure list with task 04's baseline.
+
 ## Resume order
 
-1. **Task 04, finish:** build the tree and run the host tests the stack uses
-   (`zig build test-glm-tp3-host test-glm-fp8-kv-host test-glm-exl3-host test-cuda-host`, Zig 0.17.0, CUDA 13,
-   `-Dsm=121`). The toolchain is exactly `docker/Dockerfile`'s `toolchain` stage; building that stage and running the
-   tests inside it is the surest match. Record the clean-build "no compiler warning" baseline (patch 0115's standard).
-2. **Task 05 (patch 0122, `TF_GLM_KDA_PAD`)**: the biggest gain, fully doable off the Sparks. Backport the 11 upstream
-   commits listed in the task, plus the recipe-only `chainSegs` stride fix; GPU checks if the devbox has a Blackwell GPU.
-3. **Tasks 07 and 08** (patches 0123, 0124), same way.
-4. **Tasks 01 and 02** (launcher, bash): any machine; the tests use fake inventories.
-5. Then ask the user for the task 03 window and deploy (below).
+1. **Tasks 07 and 08** (patches 0123, 0124): backport and host-test the same way.
+2. **GPU checks of 0122** if a Blackwell GPU is at hand (`tf-cuda-test glm-kda-pad-split`, then `glm-shared-check`,
+   `glm-pair-check`, `glm-lanes-concurrent` at world 3); otherwise in the window.
+3. Then ask the user for the task 03 window: `DRY_RUN=1 ./start-tp3.sh` on the kit first, then the baselines, then
+   0122 with `KDA_PAD=1`. The clean-build "no compiler warning" check is the image build on rank 0 there.
 
 Line numbers in the task files were read in an engine checkout carrying an **older** 110-patch stack plus a
 drafter-MLP edit (equivalent to patch 0109). They are close, not exact, in `recipe-0121`: re-find each site by name.

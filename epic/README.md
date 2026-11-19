@@ -1,6 +1,6 @@
 # Epic: TP=3 on three Sparks, faster than TP=2 and on a par with the Python engine
 
-Branch: `tp3-perf` (from `main` at `80be4d6`, 121 engine patches). Status: **planned**, nothing implemented yet.
+Branch: `tp3-perf` (from `main` at `80be4d6`, 121 engine patches). Status: **planned**, nothing implemented yet. Resuming elsewhere: read [HANDOFF.md](HANDOFF.md).
 
 ## Why
 
@@ -100,7 +100,7 @@ takes it), and the Python engine runs `DENSE=q4`, which this recipe rejected on 
 | [01](tasks/01-launcher-three-sparks.md) | Launcher for three Sparks: the ring launcher at TP=3 | 0 | | 2-3 d | todo |
 | [02](tasks/02-launcher-tests-and-leg-tooling.md) | Launcher tests; TP=3 `safestart` and `leg` | 0 | 01 | 1 d | todo |
 | [03](tasks/03-baselines-and-settings-legs.md) | Baselines and settings legs (maintenance window) | 0 | 01, 02 | 1 window | todo |
-| [04](tasks/04-engine-worktree-and-patch-workflow.md) | Engine worktree and patch workflow | 1 | | 0.5 d | todo |
+| [04](tasks/04-engine-worktree-and-patch-workflow.md) | Engine worktree and patch workflow | 1 | | 0.5 d | in progress: tree via `epic/engine-worktree.sh`; build and host tests to do |
 | [05](tasks/05-patch-0122-kda-pad.md) | Patch 0122: `TF_GLM_KDA_PAD` | 1 | 04 | 1-2 d + window | todo |
 | [06](tasks/06-tp3-verify-costs-and-draft-settings.md) | TP=3 verify costs and draft settings | 1 | 03, 05 | 0.5 d + window | todo |
 | [07](tasks/07-patch-0123-roce-multi.md) | Patch 0123: `TF_GLM_ROCE_MULTI` | 2 | 04 | 2-3 d + window | todo |

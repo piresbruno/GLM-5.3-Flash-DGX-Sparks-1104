@@ -1,6 +1,6 @@
 # 04 - Engine worktree and patch workflow
 
-Stage 1. Depends on: nothing. Estimate: half a day. Status: todo.
+Stage 1. Depends on: nothing. Estimate: half a day. Status: in progress (steps 1-2 done by `epic/engine-worktree.sh`; steps 3-5 to do).
 
 ## Goal
 

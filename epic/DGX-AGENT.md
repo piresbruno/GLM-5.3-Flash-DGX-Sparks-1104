@@ -5,6 +5,9 @@ the Sparks is done; what is left needs the three Sparks, and the Sparks serve pr
 `epic/README.md` (goals, gates) and `epic/tasks/03-baselines-and-settings-legs.md` (the window's legs). `HANDOFF.md`
 has the longer background.
 
+**The first window ran 2026-11-19/20:** results and decisions in `docs/speed/tp3/RESULTS.md`; one leg per run with
+`docs/tp3leg.sh <label> KEY=VALUE ...` and tables with `python3 -I docs/tp3results.py`.
+
 ## Stop first: production
 
 - The three Sparks serve production on the **older Python-engine recipe** (container `glm53-flash-tf`, its own
@@ -12,7 +15,12 @@ has the longer background.
   serves (rank 0 had ~9 GiB available; the kit's earlyoom kills rank 0 near ~3 GiB).
 - **Ask the user for a maintenance window before anything that touches the Sparks**, even read-only probes. The user
   says when it starts; nothing in this file is pre-approved.
-- Every window ends by restoring that service with its own `./start-tp3.sh`, checking `/health` and one reply.
+- **Production is a systemd user unit** (found in the first window): `glm53-tensorfold.service` runs that recipe's
+  `./start-tp3.sh`, and `glm53-nightly.timer` restarts it at 04:00 UTC every day, **even when it is down**. Stop it with
+  `systemctl --user stop glm53-tensorfold.service` and restore it with `systemctl --user start ...`, not with its own
+  scripts. A window that crosses 04:00 UTC: ask the user before stopping the timer, and start it again at the end.
+- Every window ends by restoring that service (`systemctl --user start glm53-tensorfold.service`), checking `/health`
+  and one reply.
 - This fork is public: no addresses, ssh users or host names in committed files. They live in this Spark's untracked
   `scripts/local.sh`.
 
@@ -44,7 +52,8 @@ path). Ask the user for anything missing; do not guess the kit's addresses.
 ## In the window, in this order
 
 1. **Record production, then stop it.** `docker inspect glm53-flash-tf` on every Spark into the window's notes (not
-   committed if it holds addresses); its sparkDash numbers (P3 leg); then its own `./stop.sh`. Record GPU clocks on
+   committed if it holds addresses); its sparkDash numbers (P3 leg, `python3 -I docs/sd.py P3 docs/speed/tp3`); then
+   `systemctl --user stop glm53-tensorfold.service`. Record GPU clocks on
    all three Sparks.
 2. **Read-only first:** `DRY_RUN=1 ./start-tp3.sh`. Expect three ranks, `A triangle: ...` with each rank's devices
    toward each peer, `TF_GLM_WORLD=3`, the eager NCCL set, and nothing written. If it says `switch` or stops with
@@ -64,7 +73,7 @@ path). Ask the user for anything missing; do not guess the kit's addresses.
 6. **The patches, one leg each, then together:** `KDA_PAD=1`, `ROCE_MULTI=1`, `SAMPLE_ROOT=1`, then all three. Same
    measurement set as task 03 (sparkDash Structured and prose at 1/4/6/8, prefill, `dec.py`, `--contract`,
    `quality.py`, `TF_GLM_PROF=1` per rank).
-7. **End:** `./stop-tp3.sh` (archives three logs), restart production with its own `./start-tp3.sh`, check `/health`
+7. **End:** `./stop-tp3.sh` (archives three logs), `systemctl --user start glm53-tensorfold.service`, check `/health`
    and one reply. Tell the user it is back.
 
 ## Gates per patch (from `epic/README.md`)
@@ -87,8 +96,10 @@ path). Ask the user for anything missing; do not guess the kit's addresses.
 `docs/speed/tp3/RESULTS.md` (a table per leg, the per-rank profile table, findings), the legs' JSON, the task files'
 status lines, and `epic/README.md`'s "Where it should land" with measured numbers. A patch that passes its gates:
 set its recipe default to 1 at `TP=3` in `scripts/config.sh` (`KDA_PAD`, `ROCE_MULTI` with
-`ROCE_MULTI_FALLBACK=nccl`, `SAMPLE_ROOT`). Commit (end each message with the session's attribution line) and push to
-the fork (`origin`) only; the user opens PRs against `MiaAI-Lab`.
+`ROCE_MULTI_FALLBACK=nccl`, `SAMPLE_ROOT`). Before committing, `SCRUB_HOSTS=<the kit's host names> python3 -I
+docs/scrub.py docs/speed/` (leg logs carry ssh targets, sparkDash files the unit's host name). Commit (end each
+message with the session's attribution line) and push to the fork only (on rank 0's clone the fork is the `fork`
+remote and `origin` is `MiaAI-Lab`); the user opens PRs against `MiaAI-Lab`.
 
 ## If something breaks
 

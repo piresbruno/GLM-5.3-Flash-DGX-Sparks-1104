@@ -1,6 +1,6 @@
 # 05 - Patch 0122: `TF_GLM_KDA_PAD`
 
-Stage 1. Depends on: 04. Estimate: 1-2 days, then one window. Status: patch written and host-tested 2026-11-19; GPU checks (no GPU on the devbox) and the window to do. **The largest single gain in the epic.**
+Stage 1. Depends on: 04. Estimate: 1-2 days, then one window. Status: done 2026-11-20: GPU checks pass at world 3; `KDA_PAD=1` is the TP=3 default (decode +10-17%, prefill +17-19%, quality held; docs/speed/tp3/RESULTS.md). **The largest single gain in the epic.**
 
 ## Result so far
 

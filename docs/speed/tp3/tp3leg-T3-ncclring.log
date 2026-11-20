@@ -1,0 +1,7 @@
+### tp3leg T3-ncclring  TP=3  2026-11-20T11:46:08Z  TP3_NCCL=ring
+### leg T3-ncclring  TP=3  2026-11-20T11:46:08Z
+  set TP=3
+  set TP3_NCCL=ring
+--- restart ---
+FAILED: ./start.sh restart (see docs/speed/tp3/leg-T3-ncclring.log). Leg aborted; the pair may be down.
+FAILED: docs/leg.sh (see docs/speed/tp3/leg-T3-ncclring.log)

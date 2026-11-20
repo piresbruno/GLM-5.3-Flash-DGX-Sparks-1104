@@ -1,0 +1,89 @@
+### tp3leg T3-kb128  TP=3  2026-11-20T11:56:35Z  KDA_PAD=1 SAMPLE_ROOT=1 ROCE_MULTI=1 ROCE_MULTI_KB=128
+### leg T3-kb128  TP=3  2026-11-20T11:56:35Z
+  set TP=3
+  set KDA_PAD=1
+  set SAMPLE_ROOT=1
+  set ROCE_MULTI=1
+  set ROCE_MULTI_KB=128
+--- restart ---
+[tensorfold] CUDA sm_121 device 0 (NVIDIA GB10, memory shared with the host): model 63.74 GiB; 8 streams at once, the engine's own and 7 more taking 9472 pages of 512 rows (28.82 GiB) as they need them (enough for one at a 1048576-token window), 387 MiB fixed each, of 43.5 GiB left after a 6.5 GiB reserve; prompts in passes of up to 4096 rows, a 12.0 GiB prompt cache; own glue kernels
+--- decode sweep ---
+# decode sweep, GLM-5.3-Flash at http://127.0.0.1:8081, 3 trials, max_tokens 250
+  1 stream(s) trial 1:   49.0 tok/s total,  49.0/stream  tok  250 rounds  115  round  42.2 ms  tok/round 2.174  accept 0.528  drafted/round 2.21
+  1 stream(s) trial 2:   49.2 tok/s total,  49.2/stream  tok  250 rounds  115  round  42.2 ms  tok/round 2.174  accept 0.528  drafted/round 2.21
+  1 stream(s) trial 3:   49.2 tok/s total,  49.2/stream  tok  250 rounds  115  round  42.2 ms  tok/round 2.174  accept 0.528  drafted/round 2.21
+  -> 1 stream(s): median 49.2 tok/s (mean 49.13 +- se 0.05, n=3), spread 0.37%  |  round p50 42.24 p95 42.25 max 42.25 ms, spread 0.15%  |  tokens identical  rounds identical
+  2 stream(s) trial 1:   69.4 tok/s total,  34.7/stream  tok  500 rounds  228  round  59.3 ms  tok/round 2.195  accept 0.615  drafted/round 1.94
+  2 stream(s) trial 2:   69.7 tok/s total,  34.8/stream  tok  500 rounds  228  round  59.2 ms  tok/round 2.195  accept 0.615  drafted/round 1.94
+  2 stream(s) trial 3:   69.7 tok/s total,  34.8/stream  tok  500 rounds  228  round  59.1 ms  tok/round 2.195  accept 0.615  drafted/round 1.94
+  -> 2 stream(s): median 69.7 tok/s (mean 69.58 +- se 0.11, n=3), spread 0.47%  |  round p50 59.21 p95 60.21 max 60.21 ms, spread 3.27%  |  tokens identical  rounds identical
+  4 stream(s) trial 1:   92.4 tok/s total,  23.1/stream  tok 1000 rounds  460  round  88.6 ms  tok/round 2.174  accept 0.656  drafted/round 1.78
+  4 stream(s) trial 2:   92.3 tok/s total,  23.1/stream  tok 1000 rounds  460  round  88.7 ms  tok/round 2.174  accept 0.656  drafted/round 1.78
+  4 stream(s) trial 3:   92.1 tok/s total,  23.0/stream  tok 1000 rounds  460  round  88.8 ms  tok/round 2.174  accept 0.656  drafted/round 1.78
+  -> 4 stream(s): median 92.3 tok/s (mean 92.28 +- se 0.07, n=3), spread 0.27%  |  round p50 89.17 p95 91.48 max 91.48 ms, spread 6.97%  |  tokens identical  rounds identical
+  8 stream(s) trial 1:  154.1 tok/s total,  19.3/stream  tok 2000 rounds  956  round  98.4 ms  tok/round 2.093  accept 0.661  drafted/round 1.65
+  8 stream(s) trial 2:  155.3 tok/s total,  19.4/stream  tok 2000 rounds  956  round  97.9 ms  tok/round 2.093  accept 0.661  drafted/round 1.65
+  8 stream(s) trial 3:  155.0 tok/s total,  19.4/stream  tok 2000 rounds  956  round  97.9 ms  tok/round 2.093  accept 0.661  drafted/round 1.65
+  -> 8 stream(s): median 155.0 tok/s (mean 154.78 +- se 0.35, n=3), spread 0.75%  |  round p50 98.59 p95 104.11 max 104.81 ms, spread 14.69%  |  tokens identical  rounds identical
+# wrote ~/developer/recipes/GLM-5.3-Flash-DGX-Sparks-1104/docs/speed/tp3/dec-T3-kb128.json
+# NOISE FLOOR 1 stream(s): tok/s spread 0.37% -> a win must exceed 0.73%; round_ms spread 0.15% -> 0.30%
+# NOISE FLOOR 2 stream(s): tok/s spread 0.47% -> a win must exceed 0.94%; round_ms spread 3.27% -> 6.54%
+# NOISE FLOOR 4 stream(s): tok/s spread 0.27% -> a win must exceed 0.54%; round_ms spread 6.97% -> 13.93%
+# NOISE FLOOR 8 stream(s): tok/s spread 0.75% -> a win must exceed 1.50%; round_ms spread 14.69% -> 29.37%
+--- contract corpus ---
+# contract corpus, greedy, GLM-5.3-Flash at http://127.0.0.1:8081
+  prose         18 tok -> sha 3456c634492e   71 out  'The sky appears blue because of a phenomenon c'
+  code          23 tok -> sha 026642efd6d4  103 out  '```python\ndef merge_sorted_lists(list1, list2)'
+  spelling      12 tok -> sha dbf883164b19   16 out  'The word "necessary" spelled backwards is: **y'
+  math          19 tok -> sha 4996bb5b0492  120 out  '# Multiplying 847 × 23\n\n## Step 1: Break 23 in'
+  zig           24 tok -> sha 4cad7eb8d06a   49 out  '```zig\nfn sumSlice(slice: []const u32) u32 {\n '
+  json          25 tok -> sha 8f8402f20d33   32 out  '```json\n{\n  "name": "Elena Vasquez",\n  "age": '
+  boundary   10667 tok -> sha fbe213fd977e    2 out  'ok'
+  longctx    45597 tok -> sha fbe213fd977e    2 out  'ok'
+# wrote ~/developer/recipes/GLM-5.3-Flash-DGX-Sparks-1104/docs/speed/tp3/contract-T3-kb128.json
+--- token_sha contract vs baseline ---
+  DIFF prose     baseline 633d8f48a298 leg 3456c634492e
+  DIFF code      baseline 2e49486f633d leg 026642efd6d4
+  OK   spelling  baseline dbf883164b19 leg dbf883164b19
+  DIFF math      baseline 45135802587c leg 4996bb5b0492
+  OK   zig       baseline 4cad7eb8d06a leg 4cad7eb8d06a
+  OK   json      baseline 8f8402f20d33 leg 8f8402f20d33
+  OK   boundary  baseline fbe213fd977e leg fbe213fd977e
+  OK   longctx   baseline fbe213fd977e leg fbe213fd977e
+  CONTRACT: BROKEN on prose,code,math
+### leg T3-kb128 done  2026-11-20T12:01:12Z
+--- startup ---
+info: glm: 282 linears packed (8/8 bits), 2.59 GiB freed
+info: prompt cache: 12.0 GiB of device pages and 0.0 GiB of pinned host memory a rank (0.0 GiB over the 3 ranks)
+[tensorfold] CUDA sm_121 device 0 (NVIDIA GB10, memory shared with the host): model 63.74 GiB; 8 streams at once, the engine's own and 7 more taking 9472 pages of 512 rows (28.82 GiB) as they need them (enough for one at a 1048576-token window), 387 MiB fixed each, of 43.5 GiB left after a 6.5 GiB reserve; prompts in passes of up to 4096 rows, a 12.0 GiB prompt cache; own glue kernels
+[tensorfold] serving GLM-5.3-Flash at http://0.0.0.0:8081/v1 (sampling: temperature 1.0, top_p 0.95; drafts: DFlash2 (/dflash2) + copies; context: 1048576; loaded in 123.4s)
+  rank 0 MemAvailable 6.9 GiB
+  <addr> MemAvailable 18.0 GiB
+  <addr> MemAvailable 18.2 GiB
+--- sparkDash ---
+T3-kb128 structured status=completed topK=20
+  x1: aggregate 117.27 tok/s  mean 117.27  ttft 145.48 ms  failed 0
+  x4: aggregate 204.04 tok/s  mean 56.73  ttft 424.31 ms  failed 0
+  x6: aggregate 227.84 tok/s  mean 40.21  ttft 599.62 ms  failed 0
+  x8: aggregate 226.54 tok/s  mean 29.99  ttft 785.42 ms  failed 0
+T3-kb128 prose status=completed topK=20
+  x1: aggregate 59.97 tok/s  mean 59.97  ttft 152.12 ms  failed 0
+  x4: aggregate 106.82 tok/s  mean 28.68  ttft 448.39 ms  failed 0
+  x6: aggregate 125.33 tok/s  mean 22.2  ttft 635.04 ms  failed 0
+  x8: aggregate 132.85 tok/s  mean 17.83  ttft 831.68 ms  failed 0
+T3-kb128 prefill status=completed
+  2048: 2216.21 tok/s  cached 0  lowConf False  err None
+  4096: 1801.42 tok/s  cached 0  lowConf False  err None
+  8192: 1896.94 tok/s  cached 0  lowConf False  err None
+  16384: 2062.31 tok/s  cached 0  lowConf False  err None
+  32768: 2137.09 tok/s  cached 0  lowConf False  err None
+  131072: 2150.58 tok/s  cached 0  lowConf False  err None
+--- quality ---
+  nll 0.7546528056987281 answers_sha 8e45971383f8
+--- seeded ---
+seeded T3-kb128: repeatable True, concurrent = solo True
+  solo ['b5046714c8943a6e', '7aec9a9ab1013646', '40220202b4c9d99d', '6d0e7007c7368bee']
+  rank 0 MemAvailable 6.8 GiB
+  <addr> MemAvailable 17.8 GiB
+  <addr> MemAvailable 18.2 GiB
+### tp3leg T3-kb128 done  2026-11-20T12:07:13Z

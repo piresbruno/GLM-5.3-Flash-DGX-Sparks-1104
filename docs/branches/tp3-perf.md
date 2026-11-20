@@ -13,6 +13,14 @@ where things stand.
 - Engine patches 0122 (`TF_GLM_KDA_PAD`), 0123 (`TF_GLM_ROCE_MULTI`) and 0124 (`TF_GLM_SAMPLE_ROOT`), each off by
   default and passed by the start at `TP=3` only.
 - `epic/`: the plan, the task files, the devbox handoff and the runbook for rank 0's Spark.
+- The first maintenance window (2026-11-19/20) measured every leg of task 03 and the three patches on the three
+  Sparks: `docs/speed/tp3/RESULTS.md`. `KDA_PAD=1` is now the TP=3 default (decode +10-17%, prefill +17-19%);
+  `ROCE_MULTI` and `SAMPLE_ROOT` stay off (0123 costs prefill, 0124 gains nothing), `ROCE_MULTI_KB` defaults to 128.
+- Window tooling: `docs/tp3leg.sh` (one leg's whole measurement set), `docs/sd.py` (sparkDash through its API),
+  `docs/seeded.py` (fixed-seed sampled replies), `docs/tp3results.py` (the tables), `docs/scrub.py` (kit details out of
+  committed files); `docs/leg.sh` reads `PORT` from `scripts/local.sh`; `docs/dec.py` can sweep sampled
+  (`DEC_TEMPERATURE`, the contract stays greedy).
+- `epic/README.md`: milestone M between bar 1 and bar 2 (+50% over TP=2 at 4 and 8 streams on sparkDash).
 - `scripts/tests/tp3-config.sh` runs in a sandbox without `scripts/local.sh`, so a kit's local settings no longer
   change the defaults it checks.
 - `./start-tp3.sh` reaches rank 1 again in its weights step: `tp4_prepare_worker_weights` read every worker's ssh
@@ -44,17 +52,23 @@ where things stand.
 
 ## Out of scope and follow-ups
 
-- Every measurement: the first maintenance window (`epic/DGX-AGENT.md`, task 03).
-- The window's measurement tooling at TP=3 (port from `local.sh`, Structured and prose, prefill ladder, per-rank
-  profile): planned, not started.
+- The follow-ups of the first window (`docs/speed/tp3/RESULTS.md`): 0123's prompt-path cost; `TP3_NCCL=ring` with
+  `PREFILL_REDUCE=gather`; a TP=3 cost refit for the tpm draft rule; the TP=2 gate's reference
+  (`contract-up-base.json`, not `contract-baseline.json`).
+- README and CHANGELOG for three Sparks: task 16 (ship).
 
 ## Verification
+
+- The first window on the kit: the GPU checks of 0122 at world 3, `tf-tp-test suite` on the triangle (0 failed), 17
+  measured legs, T3's contract repeated on a second boot, and TP=2 on the new image byte-identical to the lab's
+  2026-11-11 pair base (`contract-up-base.json`). Production restored through systemd at the end and checked.
 
 - `bash scripts/tests/run.sh` passes on rank 0's Spark with its `local.sh` present (it failed there before the fix).
 - `.refract/bin/validate` passes.
 
 ## Changelog
 
+- feat(tp3): the first window's results; `KDA_PAD=1` the TP=3 default, `ROCE_MULTI_KB=128`; window tooling; milestone M.
 - fix(docker): `tf-tp-test` embeds the mailbox kernel the server loads, so its RoCE suite runs at TP=3.
 - fix(tp3): `./start-tp3.sh`'s weights step reads rank 1's ssh target before the local `WORKER` shadows it.
 - fix(tests): `tp3-config.sh` runs in a sandbox without `scripts/local.sh`, so it passes on a kit.

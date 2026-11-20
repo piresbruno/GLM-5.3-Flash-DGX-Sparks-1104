@@ -1,6 +1,6 @@
 # 06 - TP=3 verify costs and draft settings
 
-Stage 1. Depends on: 03, 05. Estimate: half a day, then part of a window. Status: todo.
+Stage 1. Depends on: 03, 05. Estimate: half a day, then part of a window. Status: settings legs measured 2026-11-20 in task 03 (coupled, confidence 0.5 / 0.3, tpm with TP=2 costs: exact, within noise); the TP=3 cost refit is still to do.
 
 ## Problem
 

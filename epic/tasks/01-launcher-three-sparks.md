@@ -1,6 +1,6 @@
 # 01 - Launcher for three Sparks: the ring launcher at TP=3
 
-Stage 0. Depends on: nothing. Estimate: 2-3 days. Status: done off the Sparks 2026-11-19; the kit's DRY_RUN and LIVE wait for task 03's window.
+Stage 0. Depends on: nothing. Estimate: 2-3 days. Status: done 2026-11-20: on the kit `DRY_RUN=1 ./start-tp3.sh` finds the triangle and the first `./start-tp3.sh` is LIVE (after the weights-step fix, commit c68d7d3); `TP3_NCCL=ring` does not start (docs/speed/tp3/RESULTS.md, finding 12).
 
 ## Result
 

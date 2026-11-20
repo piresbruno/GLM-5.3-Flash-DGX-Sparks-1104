@@ -24,4 +24,5 @@ starting.
 
 ## Acceptance
 
-A recorded decision with numbers, and the epic's table updated.
+A recorded decision with numbers, and the epic's table updated. Milestone M (`epic/README.md`: +50% over TP=2 at 4 and 8
+streams on sparkDash Structured and prose, same day) read and recorded as met or with its shortfall.

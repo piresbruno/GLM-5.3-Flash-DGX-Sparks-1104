@@ -1,6 +1,7 @@
 # Handoff: TP=3 epic, for the agent resuming on a devbox
 
-**On rank 0's Spark? Read [DGX-AGENT.md](DGX-AGENT.md) first: the window's runbook.**
+**On rank 0's Spark? Read [DGX-AGENT.md](DGX-AGENT.md) first: the window's runbook.** The first window's results:
+[docs/speed/tp3/RESULTS.md](../docs/speed/tp3/RESULTS.md).
 
 Written 2026-11-19 at the end of the planning session; updated the same day after the first devbox session (x86_64,
 4 cores, no GPU): tasks 01, 02 and 04 done, patch 0122 written and host-tested. Read `epic/README.md` first (goals, causes, gates), then the task
@@ -14,9 +15,9 @@ files in `epic/tasks/`. This file says where things stand and how to resume.
 | Engine tree | Not on any remote. TensorFold `f350cd3e` plus `patches/engine/*.patch`, rebuilt exactly by `epic/engine-worktree.sh`: tree `e32afdf2d130...` at `recipe-0121`, `dadae63bfc7d...` at `recipe-0122`, `463f5a6660f0...` at `recipe-0124` (checked from upstream) |
 | Task 04 | Done. Host tests at `recipe-0121` already fail 4 + 1 crash (stale tests, listed in the task file): that list is the baseline, not a regression |
 | Tasks 01, 02 | Done off the Sparks; `bash scripts/tests/run.sh` passes. The kit's `DRY_RUN=1 ./start-tp3.sh` and first LIVE wait for the window |
-| Task 05 | Patch 0122 (`TF_GLM_KDA_PAD`) written, recipe-only `chainSegs` stride bug fixed and covered; host tests = baseline. `KDA_PAD=0` by default. GPU checks to do |
-| Tasks 07, 08 | Patches 0123 (`TF_GLM_ROCE_MULTI`, plus the mailbox fatbin in the Dockerfile) and 0124 (`TF_GLM_SAMPLE_ROOT`, verify steps only) written; host tests = baseline. `ROCE_MULTI=0`, `SAMPLE_ROOT=0` by default. Settings layout now 20 |
-| Task 03 and every later measurement | Need a maintenance window on the three Sparks: **ask the user first** (see below) |
+| Task 05 | Done 2026-11-20: GPU checks pass at world 3; `KDA_PAD=1` is the TP=3 default (decode +10-17%, prefill +17-19%) |
+| Tasks 07, 08 | Measured 2026-11-20: both exact; 0123 +6% at one stream but prefill -3-6% (off, `ROCE_MULTI_KB=128`); 0124 no gain (off) |
+| Task 03 | Done 2026-11-20 (first window): `docs/speed/tp3/RESULTS.md`. Every later measurement needs a window: **ask the user first** |
 | Status line in `~/.claude/settings.json` | Done on the Spark (unrelated side request) |
 
 ## Set up on the devbox

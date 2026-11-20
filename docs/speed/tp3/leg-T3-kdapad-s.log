@@ -1,0 +1,56 @@
+### leg T3-kdapad-s  TP=3  2026-11-20T12:18:02Z
+  set TP=3
+  set KDA_PAD=1
+  set DEC_TEMPERATURE=0.7
+  set LOADS=4,8
+  set TRIALS=5
+--- restart ---
+[safestart] 12:18:02Z verifying every rank is stopped (workers=<worker> <worker>)
+[safestart] 12:18:02Z ./stop-tp3.sh (drain, archive, kill on timeout, verified absent)
+[safestart] Stopped all three ranks. Logs saved to ~/developer/recipes/GLM-5.3-Flash-DGX-Sparks-1104/logs/glm53-spark-tp3-20261120T121807Z-3372600.tar.gz (newest 10 kept).
+[safestart] every rank absent after 1x5s - safe to start
+[safestart] 12:18:09Z ./start-tp3.sh restart
+[safestart] HEALTHY after ~135s at 12:20:19Z
+Endpoint: http://127.0.0.1:8081/v1
+Context: 1048576 tokens (kept for the next start with these settings; delete ~/developer/recipes/GLM-5.3-Flash-DGX-Sparks-1104/.state/context-fit-tp3.tsv to probe again).
+KV pool: 9427 pages = 4826624 tokens shared by 8 streams (one request up to 1048576).
+[tensorfold] CUDA sm_121 device 0 (NVIDIA GB10, memory shared with the host): model 63.74 GiB; 8 streams at once, the engine's own and 7 more taking 9427 pages of 512 rows (28.68 GiB) as they need them (enough for one at a 1048576-token window), 387 MiB fixed each, of 43.3 GiB left after a 6.5 GiB reserve; prompts in passes of up to 4096 rows, a 12.0 GiB prompt cache; own glue kernels
+--- decode sweep ---
+# decode sweep, GLM-5.3-Flash at http://127.0.0.1:8081, 5 trials, max_tokens 250
+  4 stream(s) trial 1:   85.7 tok/s total,  21.4/stream  tok 1000 rounds  470  round  88.2 ms  tok/round 2.139  accept 0.674  drafted/round 1.67
+  4 stream(s) trial 2:   87.3 tok/s total,  21.8/stream  tok 1000 rounds  470  round  87.4 ms  tok/round 2.139  accept 0.674  drafted/round 1.67
+  4 stream(s) trial 3:   87.2 tok/s total,  21.8/stream  tok 1000 rounds  470  round  87.5 ms  tok/round 2.139  accept 0.674  drafted/round 1.67
+  4 stream(s) trial 4:   87.5 tok/s total,  21.9/stream  tok 1000 rounds  470  round  87.0 ms  tok/round 2.139  accept 0.674  drafted/round 1.67
+  4 stream(s) trial 5:   86.9 tok/s total,  21.7/stream  tok 1000 rounds  470  round  88.0 ms  tok/round 2.139  accept 0.674  drafted/round 1.67
+  -> 4 stream(s): median 87.2 tok/s (mean 86.94 +- se 0.32, n=5), spread 2.04%  |  round p50 87.74 p95 90.71 max 90.71 ms, spread 6.81%  |  tokens identical  rounds identical
+  8 stream(s) trial 1:  145.2 tok/s total,  18.1/stream  tok 2000 rounds  962  round  99.6 ms  tok/round 2.089  accept 0.696  drafted/round 1.55
+  8 stream(s) trial 2:  146.0 tok/s total,  18.3/stream  tok 2000 rounds  962  round  99.1 ms  tok/round 2.089  accept 0.696  drafted/round 1.55
+  8 stream(s) trial 3:  147.7 tok/s total,  18.5/stream  tok 2000 rounds  962  round  98.0 ms  tok/round 2.089  accept 0.696  drafted/round 1.55
+  8 stream(s) trial 4:  147.3 tok/s total,  18.4/stream  tok 2000 rounds  962  round  98.2 ms  tok/round 2.089  accept 0.696  drafted/round 1.55
+  8 stream(s) trial 5:  146.3 tok/s total,  18.3/stream  tok 2000 rounds  962  round  98.8 ms  tok/round 2.089  accept 0.696  drafted/round 1.55
+  -> 8 stream(s): median 146.3 tok/s (mean 146.51 +- se 0.46, n=5), spread 1.72%  |  round p50 99.37 p95 105.47 max 105.69 ms, spread 13.44%  |  tokens identical  rounds identical
+# wrote ~/developer/recipes/GLM-5.3-Flash-DGX-Sparks-1104/docs/speed/tp3/dec-T3-kdapad-s.json
+# NOISE FLOOR 4 stream(s): tok/s spread 2.04% -> a win must exceed 4.09%; round_ms spread 6.81% -> 13.62%
+# NOISE FLOOR 8 stream(s): tok/s spread 1.72% -> a win must exceed 3.43%; round_ms spread 13.44% -> 26.88%
+--- contract corpus ---
+# contract corpus, greedy, GLM-5.3-Flash at http://127.0.0.1:8081
+  prose         18 tok -> sha 3456c634492e   71 out  'The sky appears blue because of a phenomenon c'
+  code          23 tok -> sha 026642efd6d4  103 out  '```python\ndef merge_sorted_lists(list1, list2)'
+  spelling      12 tok -> sha dbf883164b19   16 out  'The word "necessary" spelled backwards is: **y'
+  math          19 tok -> sha 4996bb5b0492  120 out  '# Multiplying 847 × 23\n\n## Step 1: Break 23 in'
+  zig           24 tok -> sha 4cad7eb8d06a   49 out  '```zig\nfn sumSlice(slice: []const u32) u32 {\n '
+  json          25 tok -> sha 8f8402f20d33   32 out  '```json\n{\n  "name": "Elena Vasquez",\n  "age": '
+  boundary   10667 tok -> sha fbe213fd977e    2 out  'ok'
+  longctx    45597 tok -> sha fbe213fd977e    2 out  'ok'
+# wrote ~/developer/recipes/GLM-5.3-Flash-DGX-Sparks-1104/docs/speed/tp3/contract-T3-kdapad-s.json
+--- token_sha contract vs baseline ---
+  DIFF prose     baseline 633d8f48a298 leg 3456c634492e
+  DIFF code      baseline 2e49486f633d leg 026642efd6d4
+  OK   spelling  baseline dbf883164b19 leg dbf883164b19
+  DIFF math      baseline 45135802587c leg 4996bb5b0492
+  OK   zig       baseline 4cad7eb8d06a leg 4cad7eb8d06a
+  OK   json      baseline 8f8402f20d33 leg 8f8402f20d33
+  OK   boundary  baseline fbe213fd977e leg fbe213fd977e
+  OK   longctx   baseline fbe213fd977e leg fbe213fd977e
+  CONTRACT: BROKEN on prose,code,math
+### leg T3-kdapad-s done  2026-11-20T12:22:57Z

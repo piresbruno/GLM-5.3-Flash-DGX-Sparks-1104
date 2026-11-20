@@ -1,0 +1,31 @@
+### leg T3-ncclring  TP=3  2026-11-20T11:46:08Z
+  set TP=3
+  set TP3_NCCL=ring
+--- restart ---
+[safestart] 11:46:08Z verifying every rank is stopped (workers=<worker> <worker>)
+[safestart] 11:46:08Z ./stop-tp3.sh (drain, archive, kill on timeout, verified absent)
+[safestart] Stopped all three ranks. Logs saved to ~/developer/recipes/GLM-5.3-Flash-DGX-Sparks-1104/logs/glm53-spark-tp3-20261120T114616Z-2763085.tar.gz (newest 10 kept).
+[safestart] every rank absent after 1x5s - safe to start
+[safestart] 11:46:18Z ./start-tp3.sh restart
+[safestart] NOT HEALTHY after 10 min - aborting this leg
+    env TF_GLM_RANK=0 TF_GLM_WORLD=3 TF_CUDA_DEVICE=0 NCCL_COMM_ID=<addr>:29583 TF_GLM_PREFILL_REDUCE=split /usr/local/bin/tensorfold-native serve /model --name GLM-5.3-Flash --host 0.0.0.0 --port 8081 --context 1048576 --parallel 8 --max-tokens 32768 --kv-cache fp8 --no-update-check --no-thinking --reasoning-effort xhigh --vision --vision-max-images 50 --chat-template /templates/chat_template.jinja --drafter /dflash2 --drafter-bits 4 --prompt-cache-gib 12 
+Started rank 2 on <addr>.
+Started rank 1 on <addr>.
+Started rank 0 here (logs: ~/developer/recipes/GLM-5.3-Flash-DGX-Sparks-1104/logs/run-tp3-20261120T114626Z-2766529-1).
+
+[6/6] Wait for the API and run a greedy smoke test
+Waiting for the API: 30 s (first start: each rank hashes the checkpoint once, the workers over NFS; then the load and graphs).
+Waiting for the API: 60 s (first start: each rank hashes the checkpoint once, the workers over NFS; then the load and graphs).
+Waiting for the API: 91 s (first start: each rank hashes the checkpoint once, the workers over NFS; then the load and graphs).
+error: rank 0: rank 2 stopped (ncclGroupEnd); this rank stops too
+
+--- ~/developer/recipes/GLM-5.3-Flash-DGX-Sparks-1104/logs/run-tp3-20261120T114626Z-2766529-1/rank0.log (last 15 lines) ---
+error: rank 0: rank 2 stopped (ncclGroupEnd); this rank stops too
+
+--- ~/developer/recipes/GLM-5.3-Flash-DGX-Sparks-1104/logs/run-tp3-20261120T114626Z-2766529-1/rank1.log (last 15 lines) ---
+error: rank 1: another rank's process ended (its line closed); this rank stops instead of waiting on it
+
+--- ~/developer/recipes/GLM-5.3-Flash-DGX-Sparks-1104/logs/run-tp3-20261120T114626Z-2766529-1/rank2.log (last 15 lines) ---
+error: ncclGroupEnd: unhandled system error (run with NCCL_DEBUG=INFO for details) (2)
+[E_START] A rank exited during startup. Inspect ~/developer/recipes/GLM-5.3-Flash-DGX-Sparks-1104/logs/current/rank*.log; ./stop-tp3.sh archives them.
+FAILED: ./start.sh restart (see docs/speed/tp3/leg-T3-ncclring.log). Leg aborted; the pair may be down.

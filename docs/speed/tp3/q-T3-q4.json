@@ -1,0 +1,24 @@
+{
+ "label": "T3-q4",
+ "nll": 0.7898972057601781,
+ "nll_error": null,
+ "nll_per_passage": [
+  0.6352354884147644,
+  0.8243757735851199,
+  0.24904234615373022,
+  2.2531450776492847
+ ],
+ "answers_sha": "e38575903d82",
+ "answers": [
+  "69",
+  "Canberra",
+  "s[::-1]",
+  "0.9",
+  "Photosynthesis",
+  "17",
+  "**y-r-a-s-s-e-c-e-n**\n\nSo \"necessary\" backwards is **yrassecen**.",
+  "A mutex protects against race conditions by ensuring only one thread accesses a shared resource at a time.",
+  "12",
+  "K"
+ ]
+}

@@ -1,0 +1,32 @@
+{
+ "solo": [
+  "b21683d1483f2214",
+  "37625d8a5175b50b",
+  "f225143db5e3a5ed",
+  "6cf79c032d03ff7f"
+ ],
+ "x4": [
+  "b21683d1483f2214",
+  "37625d8a5175b50b",
+  "f225143db5e3a5ed",
+  "6cf79c032d03ff7f"
+ ],
+ "x8": [
+  "b21683d1483f2214",
+  "37625d8a5175b50b",
+  "f225143db5e3a5ed",
+  "6cf79c032d03ff7f",
+  "b21683d1483f2214",
+  "37625d8a5175b50b",
+  "f225143db5e3a5ed",
+  "6cf79c032d03ff7f"
+ ],
+ "solo_again": [
+  "b21683d1483f2214",
+  "37625d8a5175b50b",
+  "f225143db5e3a5ed",
+  "6cf79c032d03ff7f"
+ ],
+ "repeatable": true,
+ "concurrent_equals_solo": true
+}

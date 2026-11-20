@@ -1,0 +1,24 @@
+{
+ "label": "T3-rocemulti",
+ "nll": 0.7594431164195237,
+ "nll_error": null,
+ "nll_per_passage": [
+  0.5258028705914816,
+  0.7735276111336642,
+  0.2977160936520423,
+  2.171472156749052
+ ],
+ "answers_sha": "639c916612ba",
+ "answers": [
+  "69",
+  "Canberra",
+  "s[::-1]",
+  "0.9",
+  "Photosynthesis",
+  "17",
+  "y-r-a-s-s-e-c-e-n\n\n**necessary** reversed is **yrassessecen** \u2014 wait, let me redo that carefully.\n\nnecessary = n-e-c-e-s-s-a-r-y\n\nReversed: **yrasseracen**... let me be precise, letter by letter:\n\nn \u2192 y",
+  "A mutex protects against race conditions by ensuring only one thread accesses a shared resource at a time.",
+  "12",
+  "K"
+ ]
+}

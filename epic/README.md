@@ -22,9 +22,15 @@ Prefill 2,341 / 2,362 / 2,375 / 2,385 tok/s at 2K / 4K / 8K / 16K.
 
 ## Goals (the bars)
 
-1. **Bar 1:** TP=3 decode at least **+30% over this recipe's TP=2**, same harness, same day, at 1, 4 and 8 streams.
-2. **Bar 2:** TP=3 **at least the Python engine's TP=3** on sparkDash Structured (above) and prefill (~2,350 tok/s).
-3. No change to TP=2 or TP=4 behaviour: every engine change is env-gated and off by default in the engine; the TP=3
+1. **Bar 1:** TP=3 decode at least **+30% over this recipe's TP=2**, same harness, same day, at 1, 4 and 8 streams, on
+   both harnesses (`docs/dec.py` and sparkDash Structured and prose; task 09).
+2. **Milestone M (between the bars, set 2026-11-20):** TP=3 at least **+50% over this recipe's TP=2 at 4 and 8 streams
+   on sparkDash Structured and prose**, same day (about 263 tok/s Structured at 8 against the pair's 175 that day).
+   Read at checkpoint B (task 11) and at ship (task 16). By the projection below it needs Stage 4-5 (graph replay,
+   balanced split), not Stage 2. Set after the first window measured 0122-0124 together at +31-34% over TP=2 on
+   `docs/dec.py` at 1/4/8 streams, but +22% on Structured at 8 and +9% on prose at 1 (`docs/speed/tp3/RESULTS.md`).
+3. **Bar 2:** TP=3 **at least the Python engine's TP=3** on sparkDash Structured (above) and prefill (~2,350 tok/s).
+4. No change to TP=2 or TP=4 behaviour: every engine change is env-gated and off by default in the engine; the TP=3
    launcher turns it on.
 
 ## What is known (research, 2026-11-19)
@@ -71,8 +77,21 @@ ms, KDA 15.0 -> 5.6 ms). Why TP=4 already scales: 2,048 / 4 and 16 KDA heads div
 | Bar 2 at 6 and 8 streams (284.8 / 342.2) | **Not covered by any known fix.** 342 tok/s at 8 needs 64 rows in ~187 ms; at today's 3.3 ms a shared row the rows alone cost 208 ms. Needs a ~25% lower per-row cost on top of everything here. Re-assessed at checkpoint B |
 | Prefill 2,350 | Uncertain: ~2,000 from settings; the rest depends on the KDA pad's prompt effect (unmeasured) |
 
-Caveats: there is no Structured measurement of this engine at any TP yet ([03](tasks/03-baselines-and-settings-legs.md)
-takes it), and the Python engine runs `DENSE=q4`, which this recipe rejected on quality on the pair.
+**Measured 2026-11-20** (first window, [docs/speed/tp3/RESULTS.md](../docs/speed/tp3/RESULTS.md); same day, same image):
+
+| Leg | Lone 2-row forward, rank 0 | `dec.py` x1 / x8 | sparkDash Structured x1 / x4 / x8 | Prefill 16K |
+| --- | ---: | ---: | ---: | ---: |
+| TP=2 (the pair) | - | 36.5 / 118.1 | 87.7 / 175.2 / 175.3 | 1,725 |
+| TP=3, switches off | 41.4 ms | 39.5 / 139.7 | 103.6 / 205.9 / 200.7 | 1,796 |
+| TP=3, `KDA_PAD=1` (the default now) | 35.7 ms | 46.2 / 154.7 | 109.6 / 210.5 / 219.0 | 2,134 |
+| TP=3, 0122-0124 together | 33.8 ms | 48.9 / 154.9 | 120.9 / 221.5 / 213.2 | 2,055 |
+| Python engine, TP=3 (P3) | - | - | 128.9 / 203.9 / 325.9 | 2,371 |
+
+Bar 1 is met on `dec.py` (+31-34% with 0122-0124), not on sparkDash (+20-25% Structured with `KDA_PAD`); bar 2 at
+Structured x4 only. The projection's Stage 1-2 rows (~107-111 tok/s at one stream, ~197-203 at eight) match the
+measured Structured (109.6-120.9 at one stream, 213-219 at eight), so its later rows remain the working estimate.
+
+Caveats: the table's forward times are inferred on the older stack; the measured block above is the reference now, and the Python engine runs `DENSE=q4`, which this recipe rejected on quality on the pair.
 
 ## Constraints
 
@@ -97,14 +116,14 @@ takes it), and the Python engine runs `DENSE=q4`, which this recipe rejected on 
 
 | # | Task | Stage | Depends on | Estimate | Status |
 | --- | --- | --- | --- | --- | --- |
-| [01](tasks/01-launcher-three-sparks.md) | Launcher for three Sparks: the ring launcher at TP=3 | 0 | | 2-3 d | done off the Sparks (DRY_RUN and LIVE on the kit wait for task 03's window) |
+| [01](tasks/01-launcher-three-sparks.md) | Launcher for three Sparks: the ring launcher at TP=3 | 0 | | 2-3 d | done: LIVE on the kit 2026-11-20; `TP3_NCCL=ring` does not start |
 | [02](tasks/02-launcher-tests-and-leg-tooling.md) | Launcher tests; TP=3 `safestart` and `leg` | 0 | 01 | 1 d | done (offline tests pass) |
-| [03](tasks/03-baselines-and-settings-legs.md) | Baselines and settings legs (maintenance window) | 0 | 01, 02 | 1 window | todo |
+| [03](tasks/03-baselines-and-settings-legs.md) | Baselines and settings legs (maintenance window) | 0 | 01, 02 | 1 window | done 2026-11-20 (first window; [RESULTS](../docs/speed/tp3/RESULTS.md)) |
 | [04](tasks/04-engine-worktree-and-patch-workflow.md) | Engine worktree and patch workflow | 1 | | 0.5 d | done: host tests at `recipe-0121` = stale failures, the baseline (task file) |
-| [05](tasks/05-patch-0122-kda-pad.md) | Patch 0122: `TF_GLM_KDA_PAD` | 1 | 04 | 1-2 d + window | patch written, host tests pass; GPU checks and the window to do |
-| [06](tasks/06-tp3-verify-costs-and-draft-settings.md) | TP=3 verify costs and draft settings | 1 | 03, 05 | 0.5 d + window | todo |
-| [07](tasks/07-patch-0123-roce-multi.md) | Patch 0123: `TF_GLM_ROCE_MULTI` | 2 | 04 | 2-3 d + window | patch written, host tests pass; the triangle's checks and the window to do |
-| [08](tasks/08-patch-0124-sampler-rows-to-rank0.md) | Patch 0124: sampled rows to rank 0 only | 2 | 04 | 2-3 d | patch written (verify steps only), host tests pass; fixed-seed check and profile on the kit |
+| [05](tasks/05-patch-0122-kda-pad.md) | Patch 0122: `TF_GLM_KDA_PAD` | 1 | 04 | 1-2 d + window | done: `KDA_PAD=1` the TP=3 default (decode +10-17%, prefill +17-19%) |
+| [06](tasks/06-tp3-verify-costs-and-draft-settings.md) | TP=3 verify costs and draft settings | 1 | 03, 05 | 0.5 d + window | settings measured (within noise); TP=3 cost refit to do |
+| [07](tasks/07-patch-0123-roce-multi.md) | Patch 0123: `TF_GLM_ROCE_MULTI` | 2 | 04 | 2-3 d + window | measured: exact, +6% x1, prefill -3-6%: off (prompt-path cost to find) |
+| [08](tasks/08-patch-0124-sampler-rows-to-rank0.md) | Patch 0124: sampled rows to rank 0 only | 2 | 04 | 2-3 d | measured: exact, no gain: off |
 | [09](tasks/09-checkpoint-a.md) | Checkpoint A: bar 1 | 2 | 05-08 | 1 window | todo |
 | [10](tasks/10-patch-0125-64-row-window.md) | Patch 0125: 64-row shared verify window | 3 | 09 | 1-2 w | todo |
 | [11](tasks/11-checkpoint-b.md) | Checkpoint B: bar 2 at 4/6/8 streams; go / no-go for 12-14 | 3 | 10 | 1 window | todo |

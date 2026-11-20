@@ -1,0 +1,24 @@
+{
+ "label": "T3-kdapad",
+ "nll": 0.7546528056987281,
+ "nll_error": null,
+ "nll_per_passage": [
+  0.5230652888615926,
+  0.7819220298944518,
+  0.28306335873074,
+  2.17060484605677
+ ],
+ "answers_sha": "8e45971383f8",
+ "answers": [
+  "69",
+  "Canberra",
+  "s[::-1]\n\n<thinkThe user wants a Python one-liner to reverse a string s. Code only.\n\nThe simplest way: `s[::-1]`\n\nThat's it. Just the code, no explanation.</think>```python\ns[::-1]\n```",
+  "0.9",
+  "Photosynthesis",
+  "17",
+  "y-r-a-s-s-e-c-e-n\n\n**necessary** reversed is **yrassecen**",
+  "A mutex protects against race conditions by ensuring only one thread accesses a shared resource at a time.",
+  "12",
+  "K"
+ ]
+}

@@ -261,20 +261,25 @@ L2PF="${L2PF:-0}"
 # layers' fused input stack is 8,726 / 8,341 columns wide (22 / 21 / 21 heads), not a multiple of eight, so it and
 # f_b / g_b stay bf16 on the generic kernel; the pad gives every rank's stack one eight-aligned width (8,728) so it is
 # packed and tiled like the pair's. A no-op at two and four Sparks. Every rank must agree (the fingerprint carries
-# it). 0 (default until its TP=3 gates pass): off.
-KDA_PAD="${KDA_PAD:-0}"
+# it). 1 (default since the first TP=3 window, docs/speed/tp3/RESULTS.md): decode +10-17% and prefill +17-19% at TP=3,
+# quality held; replies change from bf16 to q8-packed KDA (TP=3's own contract). 0: off.
+KDA_PAD="${KDA_PAD:-1}"
 # ROCE_MULTI=1 (engine patch 0123, TF_GLM_ROCE_MULTI, backported from upstream; ./start-tp3.sh only): the decode and
 # verify all-gathers of up to ROCE_MULTI_KB a rank go over fabric/tp's multirank RoCE (a queue pair to every peer, the
 # image's tp_mailbox.fatbin) instead of NCCL, which carries every gather at three Sparks. The wire is lent only when
 # every rank's probe matched NCCL's bytes. ROCE_MULTI_FALLBACK: error (stop when the wire does not open, while it is
-# being qualified) or nccl (go on with NCCL). 0 (default until its TP=3 gates pass): NCCL carries every exchange.
+# being qualified) or nccl (go on with NCCL). 0 (default): NCCL carries every exchange. Measured at TP=3
+# (docs/speed/tp3/RESULTS.md): exact, decode +6% at one stream, but prefill 3-6% slower at 4K-16K at every
+# ROCE_MULTI_KB, so it fails its prefill gate; an opt-in for one-stream use. ROCE_MULTI_KB 128 (default) was its best
+# limit for decode (512: the same prefill cost, 32: less of the decode gain).
 ROCE_MULTI="${ROCE_MULTI:-0}"
-ROCE_MULTI_KB="${ROCE_MULTI_KB:-512}"            # TF_TP_MAILBOX_MAX_KB: 32 verify rows x 16 KiB; at most 1024
+ROCE_MULTI_KB="${ROCE_MULTI_KB:-128}"            # TF_TP_MAILBOX_MAX_KB: verify windows up to 8 rows x 16 KiB; at most 1024
 ROCE_MULTI_FALLBACK="${ROCE_MULTI_FALLBACK:-error}"
 # SAMPLE_ROOT=1 (engine patch 0124, TF_GLM_SAMPLE_ROOT; ./start-tp3.sh only): a verify step's sampled rows, whose
 # draws only rank 0 reads, go to rank 0 alone, one grouped send a follower, instead of a broadcast a row a rank to
 # every rank (24 NCCL calls a round at eight rows and three ranks). Same logits, same draw. Every rank must agree.
-# 0 (default until its TP=3 measurement): the broadcasts, as before.
+# 0 (default): the broadcasts, as before. Measured at TP=3 (docs/speed/tp3/RESULTS.md): exact (sampled replies off =
+# on), no gain beyond noise at 4 and 8 sampled streams, so it stays off.
 SAMPLE_ROOT="${SAMPLE_ROOT:-0}"
 VISION="${VISION:-1}"                            # --vision: images (rank 0's tower)
 VISION_MAX_IMAGES="${VISION_MAX_IMAGES:-50}"     # --vision-max-images: images per request (engine default 4, at most 64)

@@ -1,6 +1,6 @@
 # 03 - Baselines and settings legs (maintenance window)
 
-Stage 0. Depends on: 01, 02. Estimate: one maintenance window (~6-8 h). Status: todo.
+Stage 0. Depends on: 01, 02. Estimate: one maintenance window (~6-8 h). Status: done 2026-11-20 (first window): every leg measured except T3-ncclring, which does not start; T3's contract repeats on a second boot and is `docs/speed/tp3/contract-baseline.json`; decisions in docs/speed/tp3/RESULTS.md. P3 within 5% of the epic's screenshots.
 
 ## Goal
 

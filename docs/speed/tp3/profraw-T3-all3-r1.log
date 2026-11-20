@@ -1,0 +1,26 @@
+info: glm prof verify 2 rows (64 calls): wall 9.28 ms, gpu 33.79 ms a call; embed 0.02 kda 9.10 mla 3.81 gather_a 1.68 dense 0.82 router 2.90 routed 10.85 shared 0.40 gather_b 3.23 head 0.98
+info: glm prof verify 2 rows (64 calls): wall 9.27 ms, gpu 33.47 ms a call; embed 0.02 kda 9.11 mla 3.80 gather_a 1.50 dense 0.82 router 2.91 routed 10.84 shared 0.40 gather_b 3.09 head 0.98
+info: glm prof prompt chunk to 64 rows (4 calls): wall 104.96 ms, gpu 104.95 ms a call; gate 0.99 embed 0.03 router 50.42 routed 50.71 head 1.63 draw 1.14 mtp 0.01 commit 0.01
+info: glm prof prompt chunk to 64 rows (4 calls): wall 108.03 ms, gpu 108.04 ms a call; gate 1.99 embed 0.04 router 50.58 routed 52.76 head 1.67 draw 0.95 mtp 0.02 commit 0.02
+info: glm prof shared 4 rows (64 calls): wall 10.56 ms, gpu 36.05 ms a call; embed 0.02 kda 9.84 mla 4.02 gather_a 1.66 dense 0.85 router 3.26 routed 11.33 shared 0.44 gather_b 3.65 head 0.99
+info: glm prof prompt chunk to 2048 rows (4 calls): wall 1762.62 ms, gpu 2115.08 ms a call; gate 0.46 embed 0.73 router 1645.90 routed 454.75 head 13.24 draw 0.01 mtp 0.00 commit 0.00
+info: glm prof prompt chunk to 2048 rows (4 calls): wall 1748.07 ms, gpu 2009.81 ms a call; gate 3.24 embed 0.68 router 1550.72 routed 428.07 head 13.56 draw 13.53 mtp 0.01 commit 0.01
+info: glm prof prompt chunk to 2048 rows (4 calls): wall 1686.32 ms, gpu 1951.08 ms a call; gate 3.78 embed 0.78 router 1499.21 routed 419.01 head 14.77 draw 13.51 mtp 0.01 commit 0.01
+info: glm prof prompt chunk to 2048 rows (4 calls): wall 1749.16 ms, gpu 2107.45 ms a call; gate 0.56 embed 0.78 router 1650.10 routed 443.73 head 12.26 draw 0.01 mtp 0.00 commit 0.00
+info: glm prof prompt chunk to 2048 rows (4 calls): wall 1729.06 ms, gpu 2006.51 ms a call; gate 3.26 embed 0.77 router 1548.90 routed 426.93 head 13.01 draw 13.64 mtp 0.01 commit 0.01
+info: glm prof prompt chunk to 2048 rows (4 calls): wall 1693.43 ms, gpu 2055.52 ms a call; gate 0.50 embed 0.71 router 1603.83 routed 437.48 head 12.99 draw 0.01 mtp 0.00 commit 0.00
+info: glm prof prompt chunk to 2048 rows (4 calls): wall 1702.96 ms, gpu 2052.93 ms a call; gate 0.58 embed 0.71 router 1603.12 routed 435.94 head 12.56 draw 0.01 mtp 0.00 commit 0.00
+info: glm prof prompt chunk to 2048 rows (4 calls): wall 1715.21 ms, gpu 2070.35 ms a call; gate 0.44 embed 0.71 router 1621.82 routed 435.00 head 12.37 draw 0.01 mtp 0.00 commit 0.00
+info: glm prof prompt chunk to 2048 rows (4 calls): wall 1727.96 ms, gpu 2097.15 ms a call; gate 0.51 embed 0.75 router 1649.49 routed 434.01 head 12.38 draw 0.01 mtp 0.00 commit 0.00
+info: glm prof prompt chunk to 2048 rows (4 calls): wall 1757.80 ms, gpu 2120.44 ms a call; gate 0.49 embed 0.77 router 1672.29 routed 433.38 head 13.50 draw 0.01 mtp 0.00 commit 0.00
+info: glm prof prompt chunk to 2048 rows (4 calls): wall 1812.07 ms, gpu 2153.38 ms a call; gate 0.62 embed 0.72 router 1676.70 routed 451.74 head 15.51 draw 8.08 mtp 0.00 commit 0.00
+info: glm prof prompt chunk to 2048 rows (4 calls): wall 1712.02 ms, gpu 2065.91 ms a call; gate 0.54 embed 0.73 router 1611.02 routed 440.67 head 12.94 draw 0.01 mtp 0.00 commit 0.00
+info: glm prof prompt chunk to 2048 rows (4 calls): wall 1705.72 ms, gpu 2056.01 ms a call; gate 0.37 embed 0.73 router 1607.23 routed 434.75 head 12.89 draw 0.02 mtp 0.01 commit 0.00
+info: glm prof prompt chunk to 2048 rows (4 calls): wall 1718.53 ms, gpu 2085.26 ms a call; gate 0.51 embed 0.77 router 1635.64 routed 435.62 head 12.69 draw 0.01 mtp 0.01 commit 0.01
+info: glm prof prompt chunk to 2048 rows (4 calls): wall 1739.18 ms, gpu 2105.97 ms a call; gate 0.41 embed 0.72 router 1657.10 routed 434.83 head 12.91 draw 0.01 mtp 0.00 commit 0.00
+info: glm prof prompt chunk to 2048 rows (4 calls): wall 1819.46 ms, gpu 2151.12 ms a call; gate 11.02 embed 0.75 router 1679.16 routed 436.42 head 15.30 draw 8.45 mtp 0.00 commit 0.01
+info: glm prof prompt chunk to 2048 rows (4 calls): wall 1744.97 ms, gpu 2108.54 ms a call; gate 0.45 embed 0.72 router 1644.66 routed 450.34 head 12.35 draw 0.01 mtp 0.00 commit 0.00
+info: glm prof prompt chunk to 2048 rows (4 calls): wall 1705.35 ms, gpu 2057.76 ms a call; gate 0.43 embed 0.71 router 1601.33 routed 442.14 head 13.14 draw 0.01 mtp 0.00 commit 0.00
+info: glm prof prompt chunk to 2048 rows (4 calls): wall 1704.69 ms, gpu 2056.79 ms a call; gate 0.48 embed 0.72 router 1604.87 routed 438.37 head 12.34 draw 0.01 mtp 0.00 commit 0.00
+info: glm prof prompt chunk to 2048 rows (4 calls): wall 1717.40 ms, gpu 2084.96 ms a call; gate 0.41 embed 0.72 router 1634.44 routed 436.98 head 12.40 draw 0.01 mtp 0.00 commit 0.00
+info: glm prof prompt chunk to 2048 rows (4 calls): wall 1743.20 ms, gpu 2106.94 ms a call; gate 0.44 embed 0.82 router 1658.07 routed 435.22 head 12.38 draw 0.01 mtp 0.00 commit 0.00

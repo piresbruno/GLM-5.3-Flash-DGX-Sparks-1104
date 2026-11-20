@@ -18,5 +18,6 @@ Estimate: 1 day. Status: todo.
 
 ## Acceptance
 
+- Bar 1, milestone M and bar 2 (`epic/README.md`) each stated as met or not, with the same-day numbers.
 - Every number in the README traces to a file under `docs/speed/tp3/`.
 - No kit-private details in committed files.

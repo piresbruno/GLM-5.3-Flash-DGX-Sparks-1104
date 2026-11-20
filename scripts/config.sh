@@ -29,7 +29,7 @@ unset _cfg_key _cfg_line _cfg_value
 
 # --- pinned engine build (hashed into the image tag with docker/ and patches/engine/*.patch) ----------------------
 TF_REPO="${TF_REPO:-https://github.com/ashhart/TensorFold.git}"
-TF_REF="${TF_REF:-f350cd3ea253a042e205746928271f9d8f71a82d}"
+TF_REF="${TF_REF:-81de26f649677aa72ae0034d4af6e010cd947038}"
 ZIG_VERSION="${ZIG_VERSION:-0.17.0}"
 # sha256 of zig-aarch64-linux-0.17.0.tar.xz (ziglang.org/download/index.json).
 ZIG_SHA256="${ZIG_SHA256:-9e8d11661d4ae3bd57702a3832781e23ad151dde5798e16a5ccd503f65234ff8}"

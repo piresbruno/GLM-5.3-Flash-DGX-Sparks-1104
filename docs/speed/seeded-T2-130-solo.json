@@ -1,0 +1,32 @@
+{
+ "solo": [
+  "468f6e704e44b515",
+  "8b97e26d3a369326",
+  "83ab6bd3a39b33c5",
+  "a5028acd8a8db1ba"
+ ],
+ "x4": [
+  "468f6e704e44b515",
+  "8b97e26d3a369326",
+  "83ab6bd3a39b33c5",
+  "a5028acd8a8db1ba"
+ ],
+ "x8": [
+  "468f6e704e44b515",
+  "8b97e26d3a369326",
+  "83ab6bd3a39b33c5",
+  "a5028acd8a8db1ba",
+  "468f6e704e44b515",
+  "8b97e26d3a369326",
+  "83ab6bd3a39b33c5",
+  "a5028acd8a8db1ba"
+ ],
+ "solo_again": [
+  "468f6e704e44b515",
+  "8b97e26d3a369326",
+  "83ab6bd3a39b33c5",
+  "a5028acd8a8db1ba"
+ ],
+ "repeatable": true,
+ "concurrent_equals_solo": true
+}

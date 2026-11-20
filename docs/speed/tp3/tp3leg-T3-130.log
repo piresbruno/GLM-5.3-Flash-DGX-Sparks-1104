@@ -1,0 +1,247 @@
+### tp3leg T3-130  TP=3  2026-11-20T15:10:44Z  KDA_PAD=0
+### leg T3-130  TP=3  2026-11-20T15:10:44Z
+  set TP=3
+  set KDA_PAD=0
+--- restart ---
+[tensorfold] CUDA sm_121 device 0 (NVIDIA GB10, memory shared with the host): model 65.62 GiB; 8 streams at once, the engine's own and 7 more taking 8043 pages of 512 rows (26.69 GiB) as they need them (enough for 3 at a 1048576-token window), 367 MiB fixed each, of 41.2 GiB left after a 6.5 GiB reserve; prompts in passes of up to 2048 rows, a 12.0 GiB prompt cache; own glue kernels
+--- decode sweep ---
+# decode sweep, GLM-5.3-Flash at http://127.0.0.1:8081, 3 trials, max_tokens 250
+  1 stream(s) trial 1:   38.1 tok/s total,  38.1/stream  tok  250 rounds  117  round  53.6 ms  tok/round 2.137  accept 0.532  drafted/round 2.12
+  1 stream(s) trial 2:   38.5 tok/s total,  38.5/stream  tok  250 rounds  117  round  53.6 ms  tok/round 2.137  accept 0.532  drafted/round 2.12
+  1 stream(s) trial 3:   38.4 tok/s total,  38.4/stream  tok  250 rounds  117  round  53.5 ms  tok/round 2.137  accept 0.532  drafted/round 2.12
+  -> 1 stream(s): median 38.4 tok/s (mean 38.31 +- se 0.10, n=3), spread 0.86%  |  round p50 53.55 p95 53.56 max 53.56 ms, spread 0.05%  |  tokens identical  rounds identical
+  2 stream(s) trial 1:   54.2 tok/s total,  27.1/stream  tok  500 rounds  225  round  76.2 ms  tok/round 2.226  accept 0.593  drafted/round 2.05
+  2 stream(s) trial 2:   55.3 tok/s total,  27.7/stream  tok  500 rounds  224  round  75.7 ms  tok/round 2.235  accept 0.595  drafted/round 2.06
+  2 stream(s) trial 3:   54.5 tok/s total,  27.3/stream  tok  500 rounds  224  round  76.4 ms  tok/round 2.235  accept 0.595  drafted/round 2.06
+  -> 2 stream(s): median 54.5 tok/s (mean 54.68 +- se 0.34, n=3), spread 2.12%  |  round p50 75.79 p95 76.98 max 76.98 ms, spread 1.82%  |  tokens identical  rounds [224, 225]
+  4 stream(s) trial 1:   71.5 tok/s total,  17.9/stream  tok 1000 rounds  451  round 115.0 ms  tok/round 2.222  accept 0.621  drafted/round 1.96
+  4 stream(s) trial 2:   74.0 tok/s total,  18.5/stream  tok 1000 rounds  451  round 111.0 ms  tok/round 2.222  accept 0.623  drafted/round 1.95
+  4 stream(s) trial 3:   76.0 tok/s total,  19.0/stream  tok 1000 rounds  453  round 107.6 ms  tok/round 2.211  accept 0.623  drafted/round 1.94
+  -> 4 stream(s): median 74.0 tok/s (mean 73.84 +- se 1.31, n=3), spread 6.13%  |  round p50 111.17 p95 116.61 max 116.61 ms, spread 10.10%  |  tokens identical  rounds [451, 453]
+  8 stream(s) trial 1:  118.7 tok/s total,  14.8/stream  tok 2000 rounds  914  round 132.9 ms  tok/round 2.193  accept 0.635  drafted/round 1.86
+  8 stream(s) trial 2:  123.8 tok/s total,  15.5/stream  tok 2000 rounds  914  round 127.3 ms  tok/round 2.193  accept 0.635  drafted/round 1.86
+  8 stream(s) trial 3:  121.1 tok/s total,  15.1/stream  tok 2000 rounds  914  round 130.4 ms  tok/round 2.193  accept 0.635  drafted/round 1.86
+  -> 8 stream(s): median 121.1 tok/s (mean 121.22 +- se 1.47, n=3), spread 4.19%  |  round p50 130.31 p95 137.02 max 143.09 ms, spread 18.02%  |  tokens identical  rounds identical
+# wrote ~/developer/recipes/GLM-5.3-Flash-DGX-Sparks-1104/docs/speed/tp3/dec-T3-130.json
+# NOISE FLOOR 1 stream(s): tok/s spread 0.86% -> a win must exceed 1.72%; round_ms spread 0.05% -> 0.09%
+# NOISE FLOOR 2 stream(s): tok/s spread 2.12% -> a win must exceed 4.23%; round_ms spread 1.82% -> 3.64%
+# NOISE FLOOR 4 stream(s): tok/s spread 6.13% -> a win must exceed 12.26%; round_ms spread 10.10% -> 20.20%
+# NOISE FLOOR 8 stream(s): tok/s spread 4.19% -> a win must exceed 8.38%; round_ms spread 18.02% -> 36.04%
+--- contract corpus ---
+# contract corpus, greedy, GLM-5.3-Flash at http://127.0.0.1:8081
+  prose         18 tok -> sha 633d8f48a298   93 out  'The sky appears blue because of a phenomenon c'
+  code          23 tok -> sha 2e49486f633d  103 out  '```python\ndef merge_sorted_lists(list1, list2)'
+  spelling      12 tok -> sha dbf883164b19   16 out  'The word "necessary" spelled backwards is: **y'
+  math          19 tok -> sha 45135802587c  120 out  '# 847 × 23\n\n## Step 1: Break apart 23\n23 = 20 '
+  zig           24 tok -> sha 4cad7eb8d06a   49 out  '```zig\nfn sumSlice(slice: []const u32) u32 {\n '
+  json          25 tok -> sha 8f8402f20d33   32 out  '```json\n{\n  "name": "Elena Vasquez",\n  "age": '
+  boundary   10667 tok -> sha fbe213fd977e    2 out  'ok'
+  longctx    45597 tok -> sha fbe213fd977e    2 out  'ok'
+# wrote ~/developer/recipes/GLM-5.3-Flash-DGX-Sparks-1104/docs/speed/tp3/contract-T3-130.json
+--- token_sha contract vs baseline ---
+  NO BASELINE CAPTURE - cannot check the contract
+### leg T3-130 done  2026-11-20T15:16:07Z
+--- startup ---
+info: glm: 188 linears packed (8/8 bits), 1.56 GiB freed
+[tensorfold] CUDA sm_121 device 0 (NVIDIA GB10, memory shared with the host): model 65.62 GiB; 8 streams at once, the engine's own and 7 more taking 8043 pages of 512 rows (26.69 GiB) as they need them (enough for 3 at a 1048576-token window), 367 MiB fixed each, of 41.2 GiB left after a 6.5 GiB reserve; prompts in passes of up to 2048 rows, a 12.0 GiB prompt cache; own glue kernels
+[tensorfold] serving GLM-5.3-Flash at http://0.0.0.0:8081/v1 (sampling: temperature 1.0, top_p 0.95; drafts: DFlash2 (/dflash2) + copies; context: 1048576; loaded in 111.6s)
+  rank 0 MemAvailable 7.0 GiB
+  rank 1 MemAvailable 18.7 GiB
+  rank 2 MemAvailable 19.0 GiB
+--- sparkDash ---
+T3-130 structured status=completed topK=20
+  x1: aggregate 96.71 tok/s  mean 96.71  ttft 175.2 ms  failed 0
+  x4: aggregate 184.03 tok/s  mean 48.45  ttft 471.09 ms  failed 0
+  x6: aggregate 192.83 tok/s  mean 34.19  ttft 666.81 ms  failed 0
+  x8: aggregate 175.26 tok/s  mean 23.61  ttft 861.09 ms  failed 0
+T3-130 prose status=completed topK=20
+  x1: aggregate 46.41 tok/s  mean 46.41  ttft 179.89 ms  failed 0
+  x4: aggregate 84.59 tok/s  mean 23.13  ttft 497.43 ms  failed 0
+  x6: aggregate 101.43 tok/s  mean 18.39  ttft 707.33 ms  failed 0
+  x8: aggregate 116.46 tok/s  mean 16.32  ttft 901.85 ms  failed 0
+T3-130 prefill status=completed
+  2048: 1612.73 tok/s  cached 0  lowConf False  err None
+  4096: 1393.85 tok/s  cached 0  lowConf False  err None
+  8192: 1430.43 tok/s  cached 0  lowConf False  err None
+  16384: 1451.01 tok/s  cached 0  lowConf False  err None
+  32768: 1446.42 tok/s  cached 0  lowConf False  err None
+  131072: 1437.79 tok/s  cached 0  lowConf False  err None
+--- quality ---
+  nll 0.7481184653865481 answers_sha 639c916612ba
+--- seeded ---
+seeded T3-130: repeatable True, concurrent = solo True
+  solo ['940a20c4a9416638', 'e901f5f577bdbc7f', '6644516627316109', 'a5028acd8a8db1ba']
+  rank 0 MemAvailable 7.0 GiB
+  rank 1 MemAvailable 18.8 GiB
+  rank 2 MemAvailable 19.1 GiB
+--- profile restart (TF_GLM_PROF=1) ---
+[safestart] 15:24:16Z verifying every rank is stopped (workers=<worker> <worker>)
+[safestart] 15:24:16Z ./stop-tp3.sh (drain, archive, kill on timeout, verified absent)
+[safestart] Stopped all three ranks. Logs saved to ~/developer/recipes/GLM-5.3-Flash-DGX-Sparks-1104/logs/glm53-spark-tp3-20261120T152421Z-2565971.tar.gz (newest 10 kept).
+[safestart] every rank absent after 1x5s - safe to start
+[safestart] 15:24:22Z ./start-tp3.sh restart
+[safestart] HEALTHY after ~125s at 15:26:22Z
+Endpoint: http://127.0.0.1:8081/v1
+Context: 1048576 tokens (kept for the next start with these settings; delete ~/developer/recipes/GLM-5.3-Flash-DGX-Sparks-1104/.state/context-fit-tp3.tsv to probe again).
+KV pool: 8098 pages = 4146176 tokens shared by 8 streams (one request up to 1048576).
+# decode sweep, GLM-5.3-Flash at http://127.0.0.1:8081, 2 trials, max_tokens 300
+  1 stream(s) trial 1:   36.8 tok/s total,  36.8/stream  tok  300 rounds  145  round  54.3 ms  tok/round 2.069  accept 0.527  drafted/round 2.03
+  1 stream(s) trial 2:   37.2 tok/s total,  37.2/stream  tok  300 rounds  144  round  54.3 ms  tok/round 2.083  accept 0.529  drafted/round 2.05
+  -> 1 stream(s): median 37.0 tok/s (mean 36.99 +- se 0.20, n=2), spread 1.06%  |  round p50 54.30 p95 54.33 max 54.33 ms, spread 0.09%  |  tokens identical  rounds [144, 145]
+# wrote ~/developer/recipes/GLM-5.3-Flash-DGX-Sparks-1104/docs/speed/tp3/dec-T3-130-prof1.json
+# NOISE FLOOR 1 stream(s): tok/s spread 1.06% -> a win must exceed 2.13%; round_ms spread 0.09% -> 0.18%
+# decode sweep, GLM-5.3-Flash at http://127.0.0.1:8081, 1 trials, max_tokens 1200
+  8 stream(s) trial 1:  112.9 tok/s total,  14.1/stream  tok 6880 rounds 3302  round 123.3 ms  tok/round 2.075  accept 0.620  drafted/round 1.74
+  -> 8 stream(s): median 112.9 tok/s (mean 112.85 +- se 0.00, n=1), spread 0.00%  |  round p50 127.34 p95 133.23 max 133.23 ms, spread 22.29%  |  tokens identical  rounds identical
+# wrote ~/developer/recipes/GLM-5.3-Flash-DGX-Sparks-1104/docs/speed/tp3/dec-T3-130-prof8.json
+# NOISE FLOOR 8 stream(s): tok/s spread 0.00% -> a win must exceed 0.00%; round_ms spread 22.29% -> 44.58%
+# GLM-5.3-Flash at http://127.0.0.1:8081/v1/chat/completions  (fresh random content each trial: no prefix-cache hit)
+  ~23K trial 1: 23573 tok, TTFT 16.79s -> 1404 tok/s (cached_tokens=0)
+  ~23K trial 2: 23546 tok, TTFT 16.73s -> 1408 tok/s (cached_tokens=0)
+  ~23K trial 3: 23537 tok, TTFT 16.79s -> 1402 tok/s (cached_tokens=0)
+  ~95K trial 1: 95116 tok, TTFT 66.97s -> 1420 tok/s (cached_tokens=0)
+  ~95K trial 2: 94960 tok, TTFT 66.81s -> 1421 tok/s (cached_tokens=0)
+  ~95K trial 3: 95005 tok, TTFT 67.09s -> 1416 tok/s (cached_tokens=0)
+== profraw-T3-130-r0.log: 48 reports
+
+## prompt chunk to 1024 rows  (1 reports, 4 calls)
+   wall   758.25 ms a call
+   gpu    763.08 ms a call   (100.6% of wall)
+   NOT GPU  -4.83 ms      ( -0.6% of wall)  <- host time, syncs, unbracketed
+   section          ms  % of gpu  % of wall
+   router       486.99     63.8%      64.2%
+   routed       224.26     29.4%      29.6%
+   draw          24.85      3.3%       3.3%
+   gate          17.17      2.3%       2.3%
+   mtp            5.15      0.7%       0.7%
+   head           4.49      0.6%       0.6%
+   embed          0.18      0.0%       0.0%
+   commit         0.00      0.0%       0.0%
+   (sum)        763.09    100.0%     100.6%
+
+## prompt chunk to 2048 rows  (43 reports, 172 calls)
+   wall  1173.98 ms a call
+   gpu   1427.15 ms a call   (121.6% of wall)
+   NOT GPU -253.17 ms      (-21.6% of wall)  <- host time, syncs, unbracketed
+   section          ms  % of gpu  % of wall
+   router      1062.52     74.5%      90.5%
+   routed       348.33     24.4%      29.7%
+   mtp           10.39      0.7%       0.9%
+   head           5.60      0.4%       0.5%
+   gate           1.03      0.1%       0.1%
+   embed          0.34      0.0%       0.0%
+   draw           0.01      0.0%       0.0%
+   commit         0.00      0.0%       0.0%
+   (sum)       1428.22    100.1%     121.7%
+
+## prompt chunk to 64 rows  (2 reports, 8 calls)
+   wall   119.78 ms a call
+   gpu    120.88 ms a call   (100.9% of wall)
+   NOT GPU  -1.09 ms      ( -0.9% of wall)  <- host time, syncs, unbracketed
+   section          ms  % of gpu  % of wall
+   routed        62.00     51.3%      51.8%
+   router        46.11     38.1%      38.5%
+   gate           8.65      7.2%       7.2%
+   mtp            1.48      1.2%       1.2%
+   head           1.46      1.2%       1.2%
+   draw           1.15      0.9%       1.0%
+   embed          0.03      0.0%       0.0%
+   commit         0.00      0.0%       0.0%
+   (sum)        120.88    100.0%     100.9%
+
+## verify 2 rows  (2 reports, 128 calls)
+   wall    43.55 ms a call
+   gpu     43.46 ms a call   ( 99.8% of wall)
+   NOT GPU   0.09 ms      (  0.2% of wall)  <- host time, syncs, unbracketed
+   section          ms  % of gpu  % of wall
+   kda           15.46     35.6%      35.5%
+   routed        13.57     31.2%      31.2%
+   mla            4.04      9.3%       9.3%
+   gather_a       3.03      7.0%       7.0%
+   gather_b       2.19      5.1%       5.0%
+   router         1.82      4.2%       4.2%
+   shared         1.54      3.6%       3.5%
+   head           1.00      2.3%       2.3%
+   dense          0.78      1.8%       1.8%
+   embed          0.01      0.0%       0.0%
+   (sum)         43.46    100.0%      99.8%
+== profraw-T3-130-r1.log: 48 reports
+
+## prompt chunk to 1024 rows  (1 reports, 4 calls)
+   wall   775.04 ms a call
+   gpu    779.88 ms a call   (100.6% of wall)
+   NOT GPU  -4.84 ms      ( -0.6% of wall)  <- host time, syncs, unbracketed
+   section          ms  % of gpu  % of wall
+   router       518.14     66.4%      66.9%
+   routed       192.42     24.7%      24.8%
+   gate          33.98      4.4%       4.4%
+   draw          24.91      3.2%       3.2%
+   mtp            5.15      0.7%       0.7%
+   head           5.08      0.7%       0.7%
+   embed          0.19      0.0%       0.0%
+   commit         0.00      0.0%       0.0%
+   (sum)        779.87    100.0%     100.6%
+
+## prompt chunk to 2048 rows  (43 reports, 172 calls)
+   wall  1173.81 ms a call
+   gpu   1426.41 ms a call   (121.5% of wall)
+   NOT GPU -252.60 ms      (-21.5% of wall)  <- host time, syncs, unbracketed
+   section          ms  % of gpu  % of wall
+   router      1111.45     77.9%      94.7%
+   routed       298.28     20.9%      25.4%
+   mtp           10.30      0.7%       0.9%
+   head           6.72      0.5%       0.6%
+   gate           0.51      0.0%       0.0%
+   embed          0.35      0.0%       0.0%
+   draw           0.01      0.0%       0.0%
+   commit         0.00      0.0%       0.0%
+   (sum)       1427.62    100.1%     121.6%
+
+## prompt chunk to 64 rows  (2 reports, 8 calls)
+   wall   113.18 ms a call
+   gpu    114.44 ms a call   (101.1% of wall)
+   NOT GPU  -1.26 ms      ( -1.1% of wall)  <- host time, syncs, unbracketed
+   section          ms  % of gpu  % of wall
+   router        55.39     48.4%      48.9%
+   routed        52.42     45.8%      46.3%
+   gate           2.23      1.9%       2.0%
+   head           1.73      1.5%       1.5%
+   mtp            1.48      1.3%       1.3%
+   draw           1.13      1.0%       1.0%
+   embed          0.04      0.0%       0.0%
+   commit         0.00      0.0%       0.0%
+   (sum)        114.43    100.0%     101.1%
+
+## verify 2 rows  (2 reports, 128 calls)
+   wall    43.30 ms a call
+   gpu     43.23 ms a call   ( 99.9% of wall)
+   NOT GPU   0.06 ms      (  0.1% of wall)  <- host time, syncs, unbracketed
+   section          ms  % of gpu  % of wall
+   kda           14.23     32.9%      32.9%
+   routed        11.70     27.1%      27.0%
+   gather_b       5.14     11.9%      11.9%
+   mla            3.74      8.6%       8.6%
+   gather_a       3.48      8.0%       8.0%
+   router         1.64      3.8%       3.8%
+   shared         1.56      3.6%       3.6%
+   head           1.00      2.3%       2.3%
+   dense          0.74      1.7%       1.7%
+   embed          0.02      0.0%       0.0%
+   (sum)         43.24    100.0%      99.9%
+== profraw-T3-130-r2.log: 11 reports
+
+## prompt chunk to 2048 rows  (11 reports, 44 calls)
+   wall  1175.98 ms a call
+   gpu   1430.13 ms a call   (121.6% of wall)
+   NOT GPU -254.15 ms      (-21.6% of wall)  <- host time, syncs, unbracketed
+   section          ms  % of gpu  % of wall
+   router      1114.74     77.9%      94.8%
+   routed       296.21     20.7%      25.2%
+   mtp           10.43      0.7%       0.9%
+   head           6.79      0.5%       0.6%
+   gate           0.49      0.0%       0.0%
+   embed          0.35      0.0%       0.0%
+   draw           0.01      0.0%       0.0%
+   commit         0.00      0.0%       0.0%
+   (sum)       1429.02     99.9%     121.5%
+### tp3leg T3-130 done  2026-11-20T15:31:56Z

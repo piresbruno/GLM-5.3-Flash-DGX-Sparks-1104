@@ -62,7 +62,8 @@ where things stand.
   `PREFILL_REDUCE=gather`; a TP=3 cost refit for the tpm draft rule; the TP=2 gate's reference
   (`contract-up-base.json`, not `contract-baseline.json`).
 - README and CHANGELOG for three Sparks: task 16 (ship).
-- The second window: T2, T3 and the switches again on 1.3.0, with the GPU checks of the pad at world 3.
+- Measured on 1.3.0 (second window): raise with MiaAI the long-prompt instability (finding 13) and the decode /
+  prefill loss against the old stack (findings 14-15); `ROCE_MULTI` on a second boot.
 
 ## Verification
 
@@ -75,6 +76,8 @@ where things stand.
 
 ## Changelog
 
+- docs(tp3): the second window on TensorFold 1.3.0 - every check passes, `KDA_PAD` still gains; 1.3.0 is slower than
+  the old stack and unstable on a 45K-token prompt (RESULTS.md findings 13-19).
 - merge: main's TensorFold 1.3.0 stack; 0122-0124 dropped (two upstream, one gone), `SAMPLE_ROOT` refused by name.
 - feat(tp3): the first window's results; `KDA_PAD=1` the TP=3 default, `ROCE_MULTI_KB=128`; window tooling; milestone M.
 - fix(docker): `tf-tp-test` embeds the mailbox kernel the server loads, so its RoCE suite runs at TP=3.

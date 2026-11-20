@@ -1,0 +1,87 @@
+{
+ "1": {
+  "trials": [
+   {
+    "total_tps": 34.711694916081825,
+    "per_stream_tps": 34.711694916081825,
+    "tokens": 300,
+    "elapsed": 8.642620325088501,
+    "tokens_per_round": [
+     2.142857142857143
+    ],
+    "acceptance": [
+     0.5387205387205387
+    ],
+    "drafted": [
+     297
+    ],
+    "rounds": [
+     140
+    ],
+    "decode_tps": [
+     36.24132705963232
+    ],
+    "round_ms": [
+     59.12744694285715
+    ],
+    "sum_rounds": 140,
+    "shas": [
+     "8979cf0aca97"
+    ],
+    "cached": [
+     0
+    ]
+   },
+   {
+    "total_tps": 35.67982291477865,
+    "per_stream_tps": 35.67982291477865,
+    "tokens": 300,
+    "elapsed": 8.408113479614258,
+    "tokens_per_round": [
+     2.158273381294964
+    ],
+    "acceptance": [
+     0.540268456375839
+    ],
+    "drafted": [
+     298
+    ],
+    "rounds": [
+     139
+    ],
+    "decode_tps": [
+     37.01763719477221
+    ],
+    "round_ms": [
+     58.30392064028777
+    ],
+    "sum_rounds": 139,
+    "shas": [
+     "8979cf0aca97"
+    ],
+    "cached": [
+     0
+    ]
+   }
+  ],
+  "median_total_tps": 35.19575891543023,
+  "spread_pct": 2.750695051136924,
+  "mean_total_tps": 35.19575891543023,
+  "sd_total_tps": 0.684569872935084,
+  "se_total_tps": 0.48406399934841104,
+  "n_trials": 2,
+  "median_round_ms": 58.71568379157246,
+  "round_ms_spread_pct": 1.4025661448356983,
+  "p95_round_ms": 59.12744694285715,
+  "max_round_ms": 59.12744694285715,
+  "tokens_identical": true,
+  "rounds_identical": false,
+  "tokens": [
+   300
+  ],
+  "rounds": [
+   139,
+   140
+  ]
+ }
+}

@@ -5,14 +5,14 @@
 
 Markdown on stdout: decode (docs/dec.py, greedy) with each leg's median and spread; sparkDash Structured and prose
 (aggregate tok/s) and prefill; the contract against docs/speed/tp3/contract-baseline.json; quality and the seeded
-probe. Deltas are against T3 (TP=3, every switch off). A delta counts only above 2x the larger trial spread of the
+probe. Deltas are against T3 (TP=3, every switch off), or the leg TP3_REF names. A delta counts only above 2x the larger trial spread of the
 two legs (the noise rule of epic/README.md).
 """
 import glob, json, os, statistics, sys
 
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "speed")
 TP3 = os.path.join(ROOT, "tp3")
-REF = "T3"
+REF = os.environ.get("TP3_REF", "T3")  # the leg every delta is against (TP3_REF=T3-130: the 1.3.0 baseline)
 
 
 def where(leg):
@@ -70,7 +70,7 @@ def main():
     legs = sys.argv[1:] or (["T2"] + sorted({os.path.basename(p)[4:-5] for p in glob.glob(os.path.join(TP3, "dec-*.json"))
                                              if "-prof" not in p}, key=lambda s: (s != REF, s)))
     ref_dec = dec(REF)
-    print("### Decode, docs/dec.py (greedy, thinking off): median tok/s of 3 trials, spread, delta vs T3\n")
+    print("### Decode, docs/dec.py (greedy, thinking off): median tok/s of 3 trials, spread, delta vs " + REF + "\n")
     print("| Leg | 1 | 2 | 4 | 8 |\n| --- | ---: | ---: | ---: | ---: |")
     for leg in legs:
         d = dec(leg)

@@ -27,6 +27,12 @@ Main moved `TF_REF` from `f350cd3e` to `81de26f6` (TensorFold 1.3.0, ~4,300 upst
 - **Every number in [docs/speed/tp3/RESULTS.md](../docs/speed/tp3/RESULTS.md) is the old stack's** (`f350cd3e` + 124
   patches). On 1.3.0 the TP=2 and TP=3 contracts, T2, T3 and the patch legs are to be measured again (the next window:
   DGX-AGENT.md), with the GPU checks of the pad at world 3 (`glm-lanes-concurrent` above all) and `tf-tp-test suite`.
+- **Measured 2026-11-20 (second window, [RESULTS](../docs/speed/tp3/RESULTS.md) "Second window"):** TP=3 starts and
+  passes every GPU check and the RoCE suite on 1.3.0, and `KDA_PAD=1` still gains +9-14% decode. But 1.3.0 is slower
+  than the old stack for this kit (TP=3 at the defaults: decode -6% to -15%, prefill -25%; the pair: decode -2% to -9%,
+  prefill -24%), and **the 45K-token contract prompt is answered wrongly on 4 of 7 boots** (finding 13; 6 of 6 right
+  on the old stack). `ROCE_MULTI` now costs only -1.5% prefill (a candidate default, one boot). Both regressions are
+  main's stack, to raise with MiaAI; the epic's later tasks wait on them.
 - A plain merge of a stack change can leave patches that no longer apply and still pass `scripts/tests/run.sh`
   (`patch-numbers.sh` checks numbers, not that the stack applies): the image build is where it fails.
 

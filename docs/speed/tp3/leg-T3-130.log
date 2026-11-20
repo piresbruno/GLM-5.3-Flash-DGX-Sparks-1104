@@ -1,0 +1,51 @@
+### leg T3-130  TP=3  2026-11-20T15:10:44Z
+  set TP=3
+  set KDA_PAD=0
+--- restart ---
+[safestart] 15:10:44Z verifying every rank is stopped (workers=<worker> <worker>)
+[safestart] 15:10:44Z ./stop-tp3.sh (drain, archive, kill on timeout, verified absent)
+[safestart] Stopped all three ranks. Logs saved to ~/developer/recipes/GLM-5.3-Flash-DGX-Sparks-1104/logs/glm53-spark-tp3-20261120T151053Z-2323996.tar.gz (newest 10 kept).
+[safestart] every rank absent after 1x5s - safe to start
+[safestart] 15:10:56Z ./start-tp3.sh restart
+[safestart] HEALTHY after ~130s at 15:13:02Z
+Endpoint: http://127.0.0.1:8081/v1
+Context: 1048576 tokens (kept for the next start with these settings; delete ~/developer/recipes/GLM-5.3-Flash-DGX-Sparks-1104/.state/context-fit-tp3.tsv to probe again).
+KV pool: 8043 pages = 4118016 tokens shared by 8 streams (one request up to 1048576).
+[tensorfold] CUDA sm_121 device 0 (NVIDIA GB10, memory shared with the host): model 65.62 GiB; 8 streams at once, the engine's own and 7 more taking 8043 pages of 512 rows (26.69 GiB) as they need them (enough for 3 at a 1048576-token window), 367 MiB fixed each, of 41.2 GiB left after a 6.5 GiB reserve; prompts in passes of up to 2048 rows, a 12.0 GiB prompt cache; own glue kernels
+--- decode sweep ---
+# decode sweep, GLM-5.3-Flash at http://127.0.0.1:8081, 3 trials, max_tokens 250
+  1 stream(s) trial 1:   38.1 tok/s total,  38.1/stream  tok  250 rounds  117  round  53.6 ms  tok/round 2.137  accept 0.532  drafted/round 2.12
+  1 stream(s) trial 2:   38.5 tok/s total,  38.5/stream  tok  250 rounds  117  round  53.6 ms  tok/round 2.137  accept 0.532  drafted/round 2.12
+  1 stream(s) trial 3:   38.4 tok/s total,  38.4/stream  tok  250 rounds  117  round  53.5 ms  tok/round 2.137  accept 0.532  drafted/round 2.12
+  -> 1 stream(s): median 38.4 tok/s (mean 38.31 +- se 0.10, n=3), spread 0.86%  |  round p50 53.55 p95 53.56 max 53.56 ms, spread 0.05%  |  tokens identical  rounds identical
+  2 stream(s) trial 1:   54.2 tok/s total,  27.1/stream  tok  500 rounds  225  round  76.2 ms  tok/round 2.226  accept 0.593  drafted/round 2.05
+  2 stream(s) trial 2:   55.3 tok/s total,  27.7/stream  tok  500 rounds  224  round  75.7 ms  tok/round 2.235  accept 0.595  drafted/round 2.06
+  2 stream(s) trial 3:   54.5 tok/s total,  27.3/stream  tok  500 rounds  224  round  76.4 ms  tok/round 2.235  accept 0.595  drafted/round 2.06
+  -> 2 stream(s): median 54.5 tok/s (mean 54.68 +- se 0.34, n=3), spread 2.12%  |  round p50 75.79 p95 76.98 max 76.98 ms, spread 1.82%  |  tokens identical  rounds [224, 225]
+  4 stream(s) trial 1:   71.5 tok/s total,  17.9/stream  tok 1000 rounds  451  round 115.0 ms  tok/round 2.222  accept 0.621  drafted/round 1.96
+  4 stream(s) trial 2:   74.0 tok/s total,  18.5/stream  tok 1000 rounds  451  round 111.0 ms  tok/round 2.222  accept 0.623  drafted/round 1.95
+  4 stream(s) trial 3:   76.0 tok/s total,  19.0/stream  tok 1000 rounds  453  round 107.6 ms  tok/round 2.211  accept 0.623  drafted/round 1.94
+  -> 4 stream(s): median 74.0 tok/s (mean 73.84 +- se 1.31, n=3), spread 6.13%  |  round p50 111.17 p95 116.61 max 116.61 ms, spread 10.10%  |  tokens identical  rounds [451, 453]
+  8 stream(s) trial 1:  118.7 tok/s total,  14.8/stream  tok 2000 rounds  914  round 132.9 ms  tok/round 2.193  accept 0.635  drafted/round 1.86
+  8 stream(s) trial 2:  123.8 tok/s total,  15.5/stream  tok 2000 rounds  914  round 127.3 ms  tok/round 2.193  accept 0.635  drafted/round 1.86
+  8 stream(s) trial 3:  121.1 tok/s total,  15.1/stream  tok 2000 rounds  914  round 130.4 ms  tok/round 2.193  accept 0.635  drafted/round 1.86
+  -> 8 stream(s): median 121.1 tok/s (mean 121.22 +- se 1.47, n=3), spread 4.19%  |  round p50 130.31 p95 137.02 max 143.09 ms, spread 18.02%  |  tokens identical  rounds identical
+# wrote ~/developer/recipes/GLM-5.3-Flash-DGX-Sparks-1104/docs/speed/tp3/dec-T3-130.json
+# NOISE FLOOR 1 stream(s): tok/s spread 0.86% -> a win must exceed 1.72%; round_ms spread 0.05% -> 0.09%
+# NOISE FLOOR 2 stream(s): tok/s spread 2.12% -> a win must exceed 4.23%; round_ms spread 1.82% -> 3.64%
+# NOISE FLOOR 4 stream(s): tok/s spread 6.13% -> a win must exceed 12.26%; round_ms spread 10.10% -> 20.20%
+# NOISE FLOOR 8 stream(s): tok/s spread 4.19% -> a win must exceed 8.38%; round_ms spread 18.02% -> 36.04%
+--- contract corpus ---
+# contract corpus, greedy, GLM-5.3-Flash at http://127.0.0.1:8081
+  prose         18 tok -> sha 633d8f48a298   93 out  'The sky appears blue because of a phenomenon c'
+  code          23 tok -> sha 2e49486f633d  103 out  '```python\ndef merge_sorted_lists(list1, list2)'
+  spelling      12 tok -> sha dbf883164b19   16 out  'The word "necessary" spelled backwards is: **y'
+  math          19 tok -> sha 45135802587c  120 out  '# 847 × 23\n\n## Step 1: Break apart 23\n23 = 20 '
+  zig           24 tok -> sha 4cad7eb8d06a   49 out  '```zig\nfn sumSlice(slice: []const u32) u32 {\n '
+  json          25 tok -> sha 8f8402f20d33   32 out  '```json\n{\n  "name": "Elena Vasquez",\n  "age": '
+  boundary   10667 tok -> sha fbe213fd977e    2 out  'ok'
+  longctx    45597 tok -> sha fbe213fd977e    2 out  'ok'
+# wrote ~/developer/recipes/GLM-5.3-Flash-DGX-Sparks-1104/docs/speed/tp3/contract-T3-130.json
+--- token_sha contract vs baseline ---
+  NO BASELINE CAPTURE - cannot check the contract
+### leg T3-130 done  2026-11-20T15:16:07Z

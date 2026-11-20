@@ -1,0 +1,11 @@
+info: glm prof prompt chunk to 2048 rows (4 calls): wall 1164.90 ms, gpu 1414.39 ms a call; gate 0.49 embed 0.34 router 1103.97 routed 292.62 head 6.72 draw 0.01 mtp 10.24 commit 0.00
+info: glm prof prompt chunk to 2048 rows (4 calls): wall 1176.06 ms, gpu 1430.13 ms a call; gate 0.49 embed 0.34 router 1108.05 routed 303.19 head 7.33 draw 0.01 mtp 10.72 commit 0.00
+info: glm prof prompt chunk to 2048 rows (4 calls): wall 1172.63 ms, gpu 1426.39 ms a call; gate 0.50 embed 0.38 router 1112.66 routed 296.21 head 6.44 draw 0.01 mtp 10.20 commit 0.00
+info: glm prof prompt chunk to 2048 rows (4 calls): wall 1174.93 ms, gpu 1425.45 ms a call; gate 0.41 embed 0.38 router 1113.04 routed 294.62 head 6.26 draw 0.01 mtp 10.71 commit 0.00
+info: glm prof prompt chunk to 2048 rows (4 calls): wall 1171.61 ms, gpu 1427.47 ms a call; gate 0.51 embed 0.33 router 1114.82 routed 295.16 head 6.51 draw 0.01 mtp 10.12 commit 0.00
+info: glm prof prompt chunk to 2048 rows (4 calls): wall 1173.84 ms, gpu 1425.25 ms a call; gate 0.48 embed 0.40 router 1110.68 routed 295.39 head 7.60 draw 0.01 mtp 10.70 commit 0.00
+info: glm prof prompt chunk to 2048 rows (4 calls): wall 1175.98 ms, gpu 1430.66 ms a call; gate 0.46 embed 0.35 router 1115.82 routed 296.78 head 6.79 draw 0.01 mtp 10.43 commit 0.01
+info: glm prof prompt chunk to 2048 rows (4 calls): wall 1178.75 ms, gpu 1430.56 ms a call; gate 0.63 embed 0.35 router 1114.74 routed 297.02 head 6.91 draw 0.01 mtp 10.91 commit 0.00
+info: glm prof prompt chunk to 2048 rows (4 calls): wall 1179.11 ms, gpu 1434.48 ms a call; gate 0.42 embed 0.35 router 1119.80 routed 296.91 head 6.59 draw 0.01 mtp 10.41 commit 0.00
+info: glm prof prompt chunk to 2048 rows (4 calls): wall 1180.44 ms, gpu 1435.79 ms a call; gate 0.45 embed 0.33 router 1119.09 routed 297.19 head 7.37 draw 0.01 mtp 11.36 commit 0.00
+info: glm prof prompt chunk to 2048 rows (4 calls): wall 1230.06 ms, gpu 1460.66 ms a call; gate 13.19 embed 0.39 router 1125.70 routed 295.88 head 6.92 draw 8.37 mtp 10.20 commit 0.01

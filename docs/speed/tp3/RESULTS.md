@@ -14,6 +14,118 @@ thinking off) and its `--contract`, sparkDash Structured and prose at 1/4/6/8 st
 400 tokens) and prefill 2K-128K, `docs/quality.py`, `docs/seeded.py`, then a second boot with `TF_GLM_PROF=1`.
 Tables are `python3 -I docs/tp3results.py`'s output; every number traces to a file beside this one.
 
+## Second window (2026-11-20, 13:53-17:01 UTC): TensorFold 1.3.0
+
+Main's stack (`81de26f6` + patches 0001-0013, image `97b32fa9c073`), the same kit, checkpoint and tooling as the first
+window. Labels end in `-130`; deltas below are against **T3-130** (TP=3, `KDA_PAD=0`), whose contract is now
+`contract-baseline.json` (the old stack's is `contract-baseline-f350cd3e.json`). The P3 reference is the first window's
+(the same day).
+
+### Verdicts on 1.3.0
+
+| Question | Answer |
+| --- | --- |
+| Does TP=3 start and pass its checks? | **Yes.** LIVE with `KDA_PAD=1` (290 linears packed); `glm-kda-pad-split`, `glm-shared-check` (108 rows), `glm-pair-check` (6 prompts), `glm-lanes-concurrent` (25 streams, 4 rounds between chunks) pass at world 3 with the pad; `tf-tp-test suite` 402 / 402 / 328, 0 failed |
+| Is `KDA_PAD=1` still the right TP=3 default? | **Yes:** decode +9% to +14%, prefill +11% over 1.3.0 without it; short replies and quality as on the old stack (`8e45971383f8`) |
+| `ROCE_MULTI=1`? | **Now within its prefill gate** (-1.4% / -1.5% at 4K / 16K, against -3-6% on the old stack); decode +4% / +5% at 1 / 2 streams, flat at 4-8 (one boot: under the drift rule, a candidate, not adopted) |
+| `TF_GLM_CHUNK_SOLO=4096`? | Takes effect ("prompt passes of 4096 rows") but prefill moves 0-3%: **not** the cause of the prefill loss |
+| Is 1.3.0 as fast as the old stack? | **No.** At the defaults (`KDA_PAD=1`) decode -6% / -7% / -10% / -15% at 1 / 2 / 4 / 8 streams and prefill -25% at 16K; the pair -2% / -5% / -9% decode at 1 / 4 / 8 and prefill -24% |
+| Are long prompts answered correctly? | **No: 4 of 7 boots answer the 45K-token `longctx` prompt wrongly** (see finding 13) |
+
+### Findings on 1.3.0
+
+13. **Long prompts are not stable.** The contract's `longctx` (45,597 tokens, greedy, thinking off) answered `'ok'` on
+    every boot of the old stack (6 of 6). On 1.3.0: T2-130 `'Okay'`, T2-130-solo `'ok'`, T3-130 `'ok'`, T3r-130
+    `'Okay.</think>Done.'`, T3-kdapad-130 `'w99088 ok</think>w6368 w11386 ...'` (the prompt's filler words echoed),
+    T3-roce-130 `'ok'`, T3-kdapad-solo-130 `'Okay.</think>I apologize, but I can'...'`. Wrong on 4 of 7 boots, at TP=2 and
+    TP=3, with no setting that decides it: something in 1.3.0's long-prompt path differs between boots of the same
+    image and settings. `boundary` (10.7K) and the six short prompts repeat on every boot; quality's short answers match
+    the old stack. Until it is explained, 1.3.0 should not serve long conversations here.
+14. **Prefill is 15-25% slower** at every size on the pair and at TP=3. The pair's profile (T2-130 against T2) has 172
+    prompt calls of 1,318 ms against 84 of 2,001 ms (227 s against 168 s for the same prompts), a target MTP pass over
+    the prompt (12 ms a call, absent on the old stack) and the shared expert +1.5 ms a lone verify (the old stack ran it
+    on a side stream). 4,096-row passes do not recover it, so its cause is open.
+15. **Decode at 4-8 streams is 9-15% slower** at every width; at one stream within 2-6%. The draft path's work is the
+    same (same contract, same `tok/round`), so the cost is in the forward.
+16. **The RoCE wire is faster:** the 86-exchange decode window takes 925 us over RoCE against 2,347 us over NCCL (old
+    stack: 1,083 us), and `ROCE_MULTI`'s prefill cost fell to -1.5%.
+17. **Boot-to-boot drift on 1.3.0** (T3-130 against T3r-130): `dec.py` +1.0% / +4.0% / +3.2% / +1.1%, prefill under 0.2%.
+18. **Build:** `zig build` takes 1,031 s (old stack ~6 min) and `nvcc` prints warnings from upstream kernels (unused
+    variables, an unreachable loop) that the old stack's patches 0111 / 0115 had removed.
+19. **Gone on 1.3.0:** `LEARN_GIB` (`--learn-conversations` is refused for GLM on CUDA upstream, per main's changelog).
+
+### Tables, second window
+
+### Decode, docs/dec.py (greedy, thinking off): median tok/s of 3 trials, spread, delta vs T3-130
+
+| Leg | 1 | 2 | 4 | 8 |
+| --- | ---: | ---: | ---: | ---: |
+| T2 | 36.5 ±5.0% (-4.9%, noise) | 52.8 ±0.5% (-3.2%, noise) | 71.3 ±0.6% (-3.6%, noise) | 118.1 ±0.9% (-2.5%, noise) |
+| T2-130 | 35.9 ±4.6% (-6.4%, noise) | 50.4 ±2.4% (-7.5%) | 67.4 ±0.7% (-8.9%, noise) | 107.8 ±2.7% (-11.0%) |
+| T2-130-solo | 36.0 ±3.4% (-6.1%, noise) | 51.0 ±0.3% (-6.4%) | 67.7 ±1.7% (-8.5%, noise) | 107.3 ±1.8% (-11.4%) |
+| T3-130 | 38.4 ±0.9% | 54.5 ±2.1% | 74.0 ±6.1% | 121.1 ±4.2% |
+| T3r-130 | 38.7 ±1.3% (+1.0%, noise) | 56.7 ±1.1% (+4.0%, noise) | 76.3 ±0.6% (+3.2%, noise) | 122.4 ±0.8% (+1.1%, noise) |
+| T3-kdapad-130 | 43.6 ±0.4% (+13.5%) | 62.2 ±1.9% (+14.1%) | 82.1 ±1.5% (+11.0%, noise) | 131.9 ±1.5% (+8.9%) |
+| T3-roce-130 | 45.4 ±1.2% (+18.4%) | 65.2 ±0.4% (+19.6%) | 82.4 ±0.2% (+11.4%, noise) | 132.6 ±2.8% (+9.5%) |
+| T3-kdapad-solo-130 | 43.4 ±1.3% (+13.2%) | 61.9 ±1.9% (+13.6%) | 81.8 ±0.4% (+10.6%, noise) | 132.1 ±1.0% (+9.1%) |
+
+### sparkDash Structured (count 1..200): aggregate tok/s, T=0.7, thinking on, top_k 20, 400 tokens
+
+| Leg | 1 | 4 | 6 | 8 |
+| --- | ---: | ---: | ---: | ---: |
+| T2 | 87.7 (-9.3%) | 175.22 (-4.8%) | 171.92 (-10.8%) | 175.26 (+0.0%) |
+| T2-130 | 86.1 (-11.0%) | 142.22 (-22.7%) | 166.91 (-13.4%) | 154.61 (-11.8%) |
+| T2-130-solo | 91.43 (-5.5%) | 173.86 (-5.5%) | 170.74 (-11.5%) | 157.26 (-10.3%) |
+| T3-130 | 96.71 | 184.03 | 192.83 | 175.26 |
+| T3r-130 | 98.94 (+2.3%) | 187.97 (+2.1%) | 191.8 (-0.5%) | 183.17 (+4.5%) |
+| T3-kdapad-130 | 103.04 (+6.5%) | 184.35 (+0.2%) | 200.47 (+4.0%) | 192.76 (+10.0%) |
+| T3-roce-130 | 111.59 (+15.4%) | 203.56 (+10.6%) | 201.47 (+4.5%) | 186.18 (+6.2%) |
+| T3-kdapad-solo-130 | 101.22 (+4.7%) | 195.5 (+6.2%) | 202.61 (+5.1%) | 186.08 (+6.2%) |
+| P3 | 128.92 (+33.3%) | 203.93 (+10.8%) | 274.35 (+42.3%) | 325.89 (+85.9%) |
+
+### sparkDash prose: aggregate tok/s, T=0.7, thinking on, top_k 20, 400 tokens
+
+| Leg | 1 | 4 | 6 | 8 |
+| --- | ---: | ---: | ---: | ---: |
+| T2 | 49.31 (+6.2%) | 79.14 (-6.4%) | 94.27 (-7.1%) | 99.47 (-14.6%) |
+| T2-130 | 45.24 (-2.5%) | 76.44 (-9.6%) | 88.6 (-12.6%) | 100.32 (-13.9%) |
+| T2-130-solo | 46.08 (-0.7%) | 78.34 (-7.4%) | 86.43 (-14.8%) | 96.12 (-17.5%) |
+| T3-130 | 46.41 | 84.59 | 101.43 | 116.46 |
+| T3r-130 | 48.59 (+4.7%) | 88.36 (+4.5%) | 102.89 (+1.4%) | 116.34 (-0.1%) |
+| T3-kdapad-130 | 60.72 (+30.8%) | 97.09 (+14.8%) | 112.68 (+11.1%) | 116.87 (+0.4%) |
+| T3-roce-130 | 59.03 (+27.2%) | 96.37 (+13.9%) | 112.87 (+11.3%) | 118.24 (+1.5%) |
+| T3-kdapad-solo-130 | 49.32 (+6.3%) | 97.72 (+15.5%) | 110.43 (+8.9%) | 117.33 (+0.7%) |
+| P3 | 65.89 (+42.0%) | 126.85 (+50.0%) | 147.59 (+45.5%) | 166.44 (+42.9%) |
+
+### sparkDash prefill: tok/s, fresh content (cached 0)
+
+| Leg | 2K | 4K | 8K | 16K | 32K | 128K |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| T2 | 1842 (+14.2%) | 1578 (+13.2%) | 1657 (+15.8%) | 1725 (+18.9%) | 1764 (+22.0%) | 1737 (+20.8%) |
+| T2-130 | 1468 (-9.0%) | 1252 (-10.2%) | 1285 (-10.1%) | 1308 (-9.8%) | 1311 (-9.4%) | 1296 (-9.9%) |
+| T2-130-solo | 1442 (-10.6%) | 1253 (-10.1%) | 1285 (-10.2%) | 1336 (-7.9%) | 1351 (-6.6%) | 1342 (-6.7%) |
+| T3-130 | 1613 | 1394 | 1430 | 1451 | 1446 | 1438 |
+| T3r-130 | 1615 (+0.1%) | 1396 (+0.1%) | 1432 (+0.1%) | 1451 (-0.0%) | 1460 (+1.0%) | 1454 (+1.2%) |
+| T3-kdapad-130 | 1806 (+12.0%) | 1538 (+10.3%) | 1584 (+10.7%) | 1610 (+11.0%) | 1618 (+11.9%) | 1606 (+11.7%) |
+| T3-roce-130 | 1791 (+11.1%) | 1516 (+8.8%) | 1567 (+9.6%) | 1586 (+9.3%) | 1600 (+10.6%) | 1587 (+10.4%) |
+| T3-kdapad-solo-130 | 1786 (+10.8%) | 1530 (+9.8%) | 1572 (+9.9%) | 1620 (+11.7%) | 1647 (+13.9%) | 1651 (+14.8%) |
+| P3 | 2337 (+44.9%) | 2365 (+69.7%) | 2366 (+65.4%) | 2371 (+63.4%) | 2362 (+63.3%) | 2279 (+58.5%) |
+
+### Contract, quality, seeded
+
+| Leg | Contract vs T3 | NLL | Answers sha | Seeded repeatable | Seeded concurrent = solo | Seeded solo sha |
+| --- | --- | ---: | --- | --- | --- | --- |
+| T2 | - | 0.7523 | a3ac04984272 | True | True | 468f6e704e44b515,8b97e26d3a369326,8 |
+| T2-130 | - | 0.7535 | a3ac04984272 | True | True | 468f6e704e44b515,8b97e26d3a369326,8 |
+| T2-130-solo | - | 0.7535 | a3ac04984272 | True | True | 468f6e704e44b515,8b97e26d3a369326,8 |
+| T3-130 | identical | 0.7481 | 639c916612ba | True | True | 940a20c4a9416638,e901f5f577bdbc7f,6 |
+| T3r-130 | differs: longctx | 0.7481 | 639c916612ba | True | True | 940a20c4a9416638,e901f5f577bdbc7f,6 |
+| T3-kdapad-130 | differs: prose,code,math,longctx | 0.7553 | 8e45971383f8 | True | True | b5046714c8943a6e,7aec9a9ab1013646,4 |
+| T3-roce-130 | differs: prose,code,math | 0.7553 | 8e45971383f8 | True | True | b5046714c8943a6e,7aec9a9ab1013646,4 |
+| T3-kdapad-solo-130 | differs: prose,code,math,longctx | 0.7553 | 8e45971383f8 | True | True | b5046714c8943a6e,7aec9a9ab1013646,4 |
+
+## First window (2026-11-19/20): the old stack
+
 ## Verdicts
 
 | Switch (patch) | Exact | Decode, `dec.py` | sparkDash | Prefill | Verdict |

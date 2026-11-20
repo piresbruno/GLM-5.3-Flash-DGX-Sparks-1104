@@ -1,0 +1,86 @@
+### tp3leg T3-kdapad-solo-130  TP=3  2026-11-20T16:48:20Z  KDA_PAD=1 TF_GLM_CHUNK_SOLO=4096
+### leg T3-kdapad-solo-130  TP=3  2026-11-20T16:48:20Z
+  set TP=3
+  set KDA_PAD=1
+  set TF_GLM_CHUNK_SOLO=4096
+--- restart ---
+[tensorfold] CUDA sm_121 device 0 (NVIDIA GB10, memory shared with the host): model 65.92 GiB; 8 streams at once, the engine's own and 7 more taking 7887 pages of 512 rows (26.18 GiB) as they need them (enough for 3 at a 1048576-token window), 367 MiB fixed each, of 40.7 GiB left after a 6.5 GiB reserve; prompts in passes of up to 2048 rows, a 12.0 GiB prompt cache; own glue kernels
+--- decode sweep ---
+# decode sweep, GLM-5.3-Flash at http://127.0.0.1:8081, 3 trials, max_tokens 250
+  1 stream(s) trial 1:   43.2 tok/s total,  43.2/stream  tok  250 rounds  116  round  47.5 ms  tok/round 2.155  accept 0.520  drafted/round 2.21
+  1 stream(s) trial 2:   43.8 tok/s total,  43.8/stream  tok  250 rounds  115  round  47.7 ms  tok/round 2.174  accept 0.521  drafted/round 2.23
+  1 stream(s) trial 3:   43.4 tok/s total,  43.4/stream  tok  250 rounds  116  round  47.7 ms  tok/round 2.155  accept 0.520  drafted/round 2.21
+  -> 1 stream(s): median 43.4 tok/s (mean 43.49 +- se 0.17, n=3), spread 1.35%  |  round p50 47.66 p95 47.70 max 47.70 ms, spread 0.50%  |  tokens identical  rounds [115, 116]
+  2 stream(s) trial 1:   61.1 tok/s total,  30.5/stream  tok  500 rounds  228  round  67.7 ms  tok/round 2.195  accept 0.607  drafted/round 1.97
+  2 stream(s) trial 2:   61.9 tok/s total,  31.0/stream  tok  500 rounds  228  round  66.8 ms  tok/round 2.195  accept 0.607  drafted/round 1.97
+  2 stream(s) trial 3:   62.2 tok/s total,  31.1/stream  tok  500 rounds  228  round  66.0 ms  tok/round 2.195  accept 0.607  drafted/round 1.97
+  -> 2 stream(s): median 61.9 tok/s (mean 61.76 +- se 0.35, n=3), spread 1.87%  |  round p50 66.91 p95 67.96 max 67.96 ms, spread 4.12%  |  tokens identical  rounds identical
+  4 stream(s) trial 1:   81.8 tok/s total,  20.5/stream  tok 1000 rounds  456  round 100.9 ms  tok/round 2.194  accept 0.630  drafted/round 1.89
+  4 stream(s) trial 2:   81.8 tok/s total,  20.5/stream  tok 1000 rounds  456  round 100.7 ms  tok/round 2.194  accept 0.630  drafted/round 1.89
+  4 stream(s) trial 3:   81.5 tok/s total,  20.4/stream  tok 1000 rounds  456  round 101.0 ms  tok/round 2.194  accept 0.630  drafted/round 1.89
+  -> 4 stream(s): median 81.8 tok/s (mean 81.73 +- se 0.10, n=3), spread 0.40%  |  round p50 101.39 p95 104.09 max 104.09 ms, spread 6.18%  |  tokens identical  rounds identical
+  8 stream(s) trial 1:  131.3 tok/s total,  16.4/stream  tok 2000 rounds  922  round 121.9 ms  tok/round 2.169  accept 0.648  drafted/round 1.80
+  8 stream(s) trial 2:  132.6 tok/s total,  16.6/stream  tok 2000 rounds  922  round 120.7 ms  tok/round 2.169  accept 0.648  drafted/round 1.80
+  8 stream(s) trial 3:  132.1 tok/s total,  16.5/stream  tok 2000 rounds  922  round 121.3 ms  tok/round 2.169  accept 0.648  drafted/round 1.80
+  -> 8 stream(s): median 132.1 tok/s (mean 131.98 +- se 0.37, n=3), spread 0.95%  |  round p50 121.11 p95 128.33 max 129.48 ms, spread 13.94%  |  tokens identical  rounds identical
+# wrote ~/developer/recipes/GLM-5.3-Flash-DGX-Sparks-1104/docs/speed/tp3/dec-T3-kdapad-solo-130.json
+# NOISE FLOOR 1 stream(s): tok/s spread 1.35% -> a win must exceed 2.69%; round_ms spread 0.50% -> 0.99%
+# NOISE FLOOR 2 stream(s): tok/s spread 1.87% -> a win must exceed 3.75%; round_ms spread 4.12% -> 8.25%
+# NOISE FLOOR 4 stream(s): tok/s spread 0.40% -> a win must exceed 0.80%; round_ms spread 6.18% -> 12.36%
+# NOISE FLOOR 8 stream(s): tok/s spread 0.95% -> a win must exceed 1.91%; round_ms spread 13.94% -> 27.88%
+--- contract corpus ---
+# contract corpus, greedy, GLM-5.3-Flash at http://127.0.0.1:8081
+  prose         18 tok -> sha 3456c634492e   71 out  'The sky appears blue because of a phenomenon c'
+  code          23 tok -> sha 026642efd6d4  103 out  '```python\ndef merge_sorted_lists(list1, list2)'
+  spelling      12 tok -> sha dbf883164b19   16 out  'The word "necessary" spelled backwards is: **y'
+  math          19 tok -> sha 4996bb5b0492  120 out  '# Multiplying 847 × 23\n\n## Step 1: Break 23 in'
+  zig           24 tok -> sha 4cad7eb8d06a   49 out  '```zig\nfn sumSlice(slice: []const u32) u32 {\n '
+  json          25 tok -> sha 8f8402f20d33   32 out  '```json\n{\n  "name": "Elena Vasquez",\n  "age": '
+  boundary   10667 tok -> sha fbe213fd977e    2 out  'ok'
+  longctx    45597 tok -> sha dc64e7c2f828   14 out  "Okay.</think>I apologize, but I can't provide "
+# wrote ~/developer/recipes/GLM-5.3-Flash-DGX-Sparks-1104/docs/speed/tp3/contract-T3-kdapad-solo-130.json
+--- token_sha contract vs baseline ---
+  DIFF prose     baseline 633d8f48a298 leg 3456c634492e
+  DIFF code      baseline 2e49486f633d leg 026642efd6d4
+  OK   spelling  baseline dbf883164b19 leg dbf883164b19
+  DIFF math      baseline 45135802587c leg 4996bb5b0492
+  OK   zig       baseline 4cad7eb8d06a leg 4cad7eb8d06a
+  OK   json      baseline 8f8402f20d33 leg 8f8402f20d33
+  OK   boundary  baseline fbe213fd977e leg fbe213fd977e
+  DIFF longctx   baseline fbe213fd977e leg dc64e7c2f828
+  CONTRACT: BROKEN on prose,code,math,longctx
+### leg T3-kdapad-solo-130 done  2026-11-20T16:53:33Z
+--- startup ---
+info: glm: 290 linears packed (8/8 bits), 2.68 GiB freed
+[tensorfold] CUDA sm_121 device 0 (NVIDIA GB10, memory shared with the host): model 65.92 GiB; 8 streams at once, the engine's own and 7 more taking 7887 pages of 512 rows (26.18 GiB) as they need them (enough for 3 at a 1048576-token window), 367 MiB fixed each, of 40.7 GiB left after a 6.5 GiB reserve; prompts in passes of up to 2048 rows, a 12.0 GiB prompt cache; own glue kernels
+[tensorfold] serving GLM-5.3-Flash at http://0.0.0.0:8081/v1 (sampling: temperature 1.0, top_p 0.95; drafts: DFlash2 (/dflash2) + copies; context: 1048576; loaded in 128.4s)
+  rank 0 MemAvailable 7.3 GiB
+  rank 1 MemAvailable 18.7 GiB
+  rank 2 MemAvailable 19.2 GiB
+--- sparkDash ---
+T3-kdapad-solo-130 structured status=completed topK=20
+  x1: aggregate 101.22 tok/s  mean 101.22  ttft 151.55 ms  failed 0
+  x4: aggregate 195.5 tok/s  mean 52.36  ttft 447.41 ms  failed 0
+  x6: aggregate 202.61 tok/s  mean 35.8  ttft 641.55 ms  failed 0
+  x8: aggregate 186.08 tok/s  mean 24.65  ttft 832.25 ms  failed 0
+T3-kdapad-solo-130 prose status=completed topK=20
+  x1: aggregate 49.32 tok/s  mean 49.32  ttft 160.67 ms  failed 0
+  x4: aggregate 97.72 tok/s  mean 25.69  ttft 482.88 ms  failed 0
+  x6: aggregate 110.43 tok/s  mean 19.56  ttft 669.71 ms  failed 0
+  x8: aggregate 117.33 tok/s  mean 15.79  ttft 861.11 ms  failed 0
+T3-kdapad-solo-130 prefill status=completed
+  2048: 1786.32 tok/s  cached 0  lowConf False  err None
+  4096: 1530.17 tok/s  cached 0  lowConf False  err None
+  8192: 1572.16 tok/s  cached 0  lowConf False  err None
+  16384: 1620.18 tok/s  cached 0  lowConf False  err None
+  32768: 1647.05 tok/s  cached 0  lowConf False  err None
+  131072: 1651.12 tok/s  cached 0  lowConf False  err None
+--- quality ---
+  nll 0.7553371781284369 answers_sha 8e45971383f8
+--- seeded ---
+seeded T3-kdapad-solo-130: repeatable True, concurrent = solo True
+  solo ['b5046714c8943a6e', '7aec9a9ab1013646', '40220202b4c9d99d', '6d0e7007c7368bee']
+  rank 0 MemAvailable 7.3 GiB
+  rank 1 MemAvailable 18.9 GiB
+  rank 2 MemAvailable 19.2 GiB
+### tp3leg T3-kdapad-solo-130 done  2026-11-20T17:00:54Z

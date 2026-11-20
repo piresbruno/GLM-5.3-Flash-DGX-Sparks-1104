@@ -1,5 +1,8 @@
 # Handoff: TP=3 epic, for the agent resuming on a devbox
 
+**2026-11-20, second window: 1.3.0 measured** (RESULTS.md "Second window"): TP=3 works and `KDA_PAD` gains, but 1.3.0
+is slower than the old stack and answers a 45K-token prompt wrongly on 4 of 7 boots: raise both with MiaAI first.
+
 **2026-11-20: main moved to TensorFold 1.3.0 and this branch with it** (`epic/README.md`, "TensorFold 1.3.0"): 0122-0124
 are dropped, the TP=3 switches are upstream's, and the first window's numbers are the old stack's.
 

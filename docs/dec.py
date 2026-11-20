@@ -37,6 +37,10 @@ OUT = os.environ.get("DEC_OUT") or os.path.join(os.path.dirname(os.path.abspath(
 # window - the regime where a shared-window cost table matters most, since round cost grows with
 # context. The filler is seeded, so it is byte-identical across legs and stays comparable.
 CTXWORDS = int(os.environ.get("CTXWORDS", "0"))
+# The sweep's sampler (the contract stays greedy): DEC_TEMPERATURE 0 (default) is greedy; above 0 the sweep samples at
+# that temperature with DEC_TOP_K and a fixed seed, for legs whose switch acts on sampled rows (TF_GLM_SAMPLE_ROOT).
+SWEEP_TEMPERATURE = float(os.environ.get("DEC_TEMPERATURE", "0"))
+SWEEP_TOP_K = int(os.environ.get("DEC_TOP_K", "20"))
 
 LONG = ["Write five detailed paragraphs about the history of ocean navigation.",
         "Explain how a modern operating system schedules threads. Be thorough and use several paragraphs.",
@@ -68,10 +72,13 @@ def with_context(prompt):
     filler = " ".join(f"w{random.randint(0, 99999)}" for _ in range(CTXWORDS))
     return "Reference text (ignore it, answer the question after it):\n" + filler + "\n\n" + prompt
 
-def chat(text, maxtok, timeout=1800):
-    body = json.dumps({"model": MODEL, "messages": [{"role": "user", "content": text}],
-                       "temperature": 0.0, "max_tokens": maxtok,
-                       "chat_template_kwargs": {"enable_thinking": False}}).encode()
+def chat(text, maxtok, timeout=1800, temperature=0.0):
+    req = {"model": MODEL, "messages": [{"role": "user", "content": text}],
+           "temperature": temperature, "max_tokens": maxtok,
+           "chat_template_kwargs": {"enable_thinking": False}}
+    if temperature > 0:
+        req.update(top_k=SWEEP_TOP_K, seed=1234)
+    body = json.dumps(req).encode()
     req = urllib.request.Request(BASE + "/v1/chat/completions", body, {"Content-Type": "application/json"})
     t0 = time.time()
     r = json.load(urllib.request.urlopen(req, timeout=timeout))
@@ -115,7 +122,7 @@ def sweep(label):
             outs, errs = [None] * n, []
             def run(i):
                 try:
-                    outs[i] = chat(with_context(LONG[i % len(LONG)]), MAXTOK)
+                    outs[i] = chat(with_context(LONG[i % len(LONG)]), MAXTOK, temperature=SWEEP_TEMPERATURE)
                 except Exception as e:
                     errs.append(repr(e)[:160])
             th = [threading.Thread(target=run, args=(i,)) for i in range(n)]

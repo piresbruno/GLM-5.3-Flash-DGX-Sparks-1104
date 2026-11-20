@@ -19,6 +19,11 @@ export TP=${TP:-2}
 OUT=docs/speed; [[ "$TP" != 3 ]] || OUT=docs/speed/tp3
 mkdir -p "$OUT"
 export DEC_OUT="$PWD/$OUT"
+# dec.py's server: U if given, else scripts/local.sh's PORT (a kit serves on its own port), else dec.py's 8888.
+if [[ -z "${U:-}" ]]; then
+  _port=${PORT:-$( [[ -f scripts/local.sh ]] && sed -n 's/^PORT=\([^ \t#]*\).*/\1/p' scripts/local.sh | head -1 )}
+  [[ -z "$_port" ]] || export U="http://127.0.0.1:$_port"
+fi
 LOG=$OUT/leg-$LABEL.log
 : > "$LOG"
 say() { printf '%s\n' "$*" | tee -a "$LOG"; }

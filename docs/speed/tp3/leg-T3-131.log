@@ -1,0 +1,57 @@
+### leg T3-131  TP=3  2026-11-20T18:00:33Z
+  set TP=3
+--- restart ---
+[safestart] 18:00:33Z verifying every rank is stopped (workers=<worker> <worker>)
+[safestart] 18:00:33Z ./stop-tp3.sh (drain, archive, kill on timeout, verified absent)
+[safestart] Stopped all three ranks. Logs saved to ~/developer/recipes/GLM-5.3-Flash-DGX-Sparks-1104/logs/glm53-spark-tp3-20261120T180038Z-1225390.tar.gz (newest 10 kept).
+[safestart] every rank absent after 1x5s - safe to start
+[safestart] 18:00:40Z ./start-tp3.sh restart
+[safestart] HEALTHY after ~140s at 18:02:55Z
+[tensorfold] <addr> "GET /health HTTP/1.1" 200 -
+[tensorfold] <addr> "GET /metrics HTTP/1.1" 200 -
+[tensorfold] 127.0.0.1 "GET /health HTTP/1.1" 200 -
+--- decode sweep ---
+# decode sweep, GLM-5.3-Flash at http://127.0.0.1:8081, 3 trials, max_tokens 250
+  1 stream(s) trial 1:   38.7 tok/s total,  38.7/stream  tok  250 rounds  116  round  53.4 ms  tok/round 2.155  accept 0.520  drafted/round 2.21
+  1 stream(s) trial 2:   43.6 tok/s total,  43.6/stream  tok  250 rounds  116  round  47.5 ms  tok/round 2.155  accept 0.520  drafted/round 2.21
+  1 stream(s) trial 3:   43.6 tok/s total,  43.6/stream  tok  250 rounds  116  round  47.5 ms  tok/round 2.155  accept 0.520  drafted/round 2.21
+  -> 1 stream(s): median 43.6 tok/s (mean 41.95 +- se 1.63, n=3), spread 11.30%  |  round p50 47.54 p95 53.39 max 53.39 ms, spread 12.48%  |  tokens identical  rounds identical
+  2 stream(s) trial 1:   63.0 tok/s total,  31.5/stream  tok  500 rounds  228  round  65.4 ms  tok/round 2.195  accept 0.607  drafted/round 1.97
+  2 stream(s) trial 2:   62.5 tok/s total,  31.3/stream  tok  500 rounds  228  round  65.4 ms  tok/round 2.195  accept 0.607  drafted/round 1.97
+  2 stream(s) trial 3:   62.5 tok/s total,  31.3/stream  tok  500 rounds  228  round  65.4 ms  tok/round 2.195  accept 0.607  drafted/round 1.97
+  -> 2 stream(s): median 62.5 tok/s (mean 62.67 +- se 0.16, n=3), spread 0.79%  |  round p50 65.38 p95 66.45 max 66.45 ms, spread 3.09%  |  tokens identical  rounds identical
+  4 stream(s) trial 1:   82.2 tok/s total,  20.6/stream  tok 1000 rounds  456  round  99.2 ms  tok/round 2.194  accept 0.630  drafted/round 1.89
+  4 stream(s) trial 2:   82.7 tok/s total,  20.7/stream  tok 1000 rounds  456  round  99.7 ms  tok/round 2.194  accept 0.630  drafted/round 1.89
+  4 stream(s) trial 3:   80.7 tok/s total,  20.2/stream  tok 1000 rounds  456  round 102.5 ms  tok/round 2.194  accept 0.630  drafted/round 1.89
+  -> 4 stream(s): median 82.2 tok/s (mean 81.89 +- se 0.59, n=3), spread 2.39%  |  round p50 100.52 p95 103.96 max 103.96 ms, spread 7.72%  |  tokens identical  rounds identical
+  8 stream(s) trial 1:  130.8 tok/s total,  16.4/stream  tok 2000 rounds  922  round 122.2 ms  tok/round 2.169  accept 0.648  drafted/round 1.80
+  8 stream(s) trial 2:  129.1 tok/s total,  16.1/stream  tok 2000 rounds  922  round 123.9 ms  tok/round 2.169  accept 0.647  drafted/round 1.80
+  8 stream(s) trial 3:  132.6 tok/s total,  16.6/stream  tok 2000 rounds  922  round 120.7 ms  tok/round 2.169  accept 0.648  drafted/round 1.80
+  -> 8 stream(s): median 130.8 tok/s (mean 130.84 +- se 1.00, n=3), spread 2.66%  |  round p50 122.13 p95 130.39 max 131.83 ms, spread 15.87%  |  tokens identical  rounds identical
+# wrote ~/developer/recipes/GLM-5.3-Flash-DGX-Sparks-1104/docs/speed/tp3/dec-T3-131.json
+# NOISE FLOOR 1 stream(s): tok/s spread 11.30% -> a win must exceed 22.60%; round_ms spread 12.48% -> 24.95%
+# NOISE FLOOR 2 stream(s): tok/s spread 0.79% -> a win must exceed 1.58%; round_ms spread 3.09% -> 6.18%
+# NOISE FLOOR 4 stream(s): tok/s spread 2.39% -> a win must exceed 4.78%; round_ms spread 7.72% -> 15.44%
+# NOISE FLOOR 8 stream(s): tok/s spread 2.66% -> a win must exceed 5.32%; round_ms spread 15.87% -> 31.74%
+--- contract corpus ---
+# contract corpus, greedy, GLM-5.3-Flash at http://127.0.0.1:8081
+  prose         18 tok -> sha 3456c634492e   71 out  'The sky appears blue because of a phenomenon c'
+  code          23 tok -> sha 026642efd6d4  103 out  '```python\ndef merge_sorted_lists(list1, list2)'
+  spelling      12 tok -> sha dbf883164b19   16 out  'The word "necessary" spelled backwards is: **y'
+  math          19 tok -> sha 4996bb5b0492  120 out  '# Multiplying 847 × 23\n\n## Step 1: Break 23 in'
+  zig           24 tok -> sha 4cad7eb8d06a   49 out  '```zig\nfn sumSlice(slice: []const u32) u32 {\n '
+  json          25 tok -> sha 8f8402f20d33   32 out  '```json\n{\n  "name": "Elena Vasquez",\n  "age": '
+  boundary   10667 tok -> sha fbe213fd977e    2 out  'ok'
+  longctx    45597 tok -> sha fbe213fd977e    2 out  'ok'
+# wrote ~/developer/recipes/GLM-5.3-Flash-DGX-Sparks-1104/docs/speed/tp3/contract-T3-131.json
+--- token_sha contract vs baseline ---
+  DIFF prose     baseline 633d8f48a298 leg 3456c634492e
+  DIFF code      baseline 2e49486f633d leg 026642efd6d4
+  OK   spelling  baseline dbf883164b19 leg dbf883164b19
+  DIFF math      baseline 45135802587c leg 4996bb5b0492
+  OK   zig       baseline 4cad7eb8d06a leg 4cad7eb8d06a
+  OK   json      baseline 8f8402f20d33 leg 8f8402f20d33
+  OK   boundary  baseline fbe213fd977e leg fbe213fd977e
+  OK   longctx   baseline fbe213fd977e leg fbe213fd977e
+  CONTRACT: BROKEN on prose,code,math
+### leg T3-131 done  2026-11-20T18:05:42Z

@@ -1,0 +1,6 @@
+T3-131 structured x1:  106.4 tok/s  tok/round 6.79  round   63.8 ms  drafted/round 5.86  accept 0.99
+T3-131 structured x4:  232.0 tok/s  tok/round 6.82  round  118.2 ms  drafted/round 5.88  accept 0.99
+T3-131 structured x8:  218.1 tok/s  tok/round 3.95  round  145.3 ms  drafted/round 2.97  accept 0.99
+T3-131 prose      x1:   56.9 tok/s  tok/round 2.99  round   52.4 ms  drafted/round 2.77  accept 0.72
+T3-131 prose      x4:  100.8 tok/s  tok/round 2.60  round  103.2 ms  drafted/round 2.25  accept 0.71
+T3-131 prose      x8:  132.6 tok/s  tok/round 2.65  round  160.1 ms  drafted/round 2.22  accept 0.74

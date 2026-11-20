@@ -33,6 +33,15 @@ Main moved `TF_REF` from `f350cd3e` to `81de26f6` (TensorFold 1.3.0, ~4,300 upst
   prefill -24%), and **the 45K-token contract prompt is answered wrongly on 4 of 7 boots** (finding 13; 6 of 6 right
   on the old stack). `ROCE_MULTI` now costs only -1.5% prefill (a candidate default, one boot). Both regressions are
   main's stack, to raise with MiaAI; the epic's later tasks wait on them.
+- **Researched and measured 2026-11-20 (third set of legs, [research-2026-11-gap.md](research-2026-11-gap.md)):** main's
+  patches 0014-0015 are merged and fix the 45K prompt (3 boots of 3). 1.3.0's slowdown is old patches that did not
+  carry over (shared-window batching, the shared expert's side stream, the 4,096-row prompt pass, ABSORB_MMA): a new
+  task 17, first in line. `HEAD=bf16` is slower at TP=3; q8 stays. The Python engine's figures are measured now: a
+  lone verify of 24.9 ms at one row and 48.4 ms at eight, a 64-row window in total, drafts on the sampler's keyed
+  noise, the same 6/5/5 expert split and NCCL only. `docs/rounds.py` shows the 32-row window halving this engine's
+  drafts on Structured at 8 streams (task 10 confirmed, about +20% there) and a fixed round cost of ~46 ms against
+  ~22 ms (a new task 18: profile the round outside the forward). Order now: 17, 10, 18, then 12-13 only if 18's
+  profile supports them, 15; 14 is not needed for parity.
 - A plain merge of a stack change can leave patches that no longer apply and still pass `scripts/tests/run.sh`
   (`patch-numbers.sh` checks numbers, not that the stack applies): the image build is where it fails.
 
@@ -167,6 +176,8 @@ Caveats: the table's forward times are inferred on the older stack; the measured
 | [14](tasks/14-patch-balanced-routed-split.md) | Patch: balanced routed-expert split | 5 | 11 | 2-3 w | todo |
 | [15](tasks/15-prefill.md) | Prefill at TP=3 | 1-5 | 03, 05 | spread | todo |
 | [16](tasks/16-ship.md) | Ship: README, CHANGELOG, results | 6 | 09 (and later stages) | 1 d | todo |
+| 17 | Restore what 1.3.0 lost: report upstream, port back the rest ([research](research-2026-11-gap.md)) | 2 | | to estimate | todo: first in line |
+| 18 | Profile a round outside the verify forward; start the next draft pass early ([research](research-2026-11-gap.md)) | 3 | 17 | to estimate | todo: decides 12-13 |
 
 Checkpoint A (task 09) is where bar 1 is judged. Checkpoint B (task 11) decides whether the expensive stages (12-14)
 are worth starting. Patch numbers after 0125 are assigned in the order patches land.

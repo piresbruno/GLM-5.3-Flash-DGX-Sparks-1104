@@ -1,0 +1,1810 @@
+{
+ "structured-x1": {
+  "summary": [
+   {
+    "tps": 104.48139283731045,
+    "tok_round": 6.557377049180328,
+    "round_ms": 62.761194803278684,
+    "drafted_round": 5.622950819672131,
+    "accept": 0.9883381924198251
+   },
+   {
+    "tps": 108.25186283702637,
+    "tok_round": 7.017543859649122,
+    "round_ms": 64.8260794385965,
+    "drafted_round": 6.105263157894737,
+    "accept": 0.9827586206896551
+   }
+  ],
+  "streams": [
+   [
+    {
+     "wall": 4.131387233734131,
+     "completion": 400,
+     "rounds": 61,
+     "drafted": 343,
+     "accepted": 339,
+     "decode_s": 3.828432883,
+     "tensorfold": {
+      "enable_thinking": true,
+      "reasoning_effort": "xhigh",
+      "engine": "lanes",
+      "tokens_per_second": 100.27678249224557,
+      "seconds": 3.978986861,
+      "prefill_seconds": 0.150553978,
+      "prefill_widths": [
+       33
+      ],
+      "prefill_raised": [],
+      "time_to_first_token": 0.151216826,
+      "sampling": "exact",
+      "drafts": true,
+      "token_sha256": "37ad9e0b497ac16faadde4b2f73f2f416d274e3402d87f586c37b3474aab11f3",
+      "min_rows": 2
+     },
+     "speculative": {
+      "rounds": 61,
+      "drafted": 343,
+      "accepted": 339,
+      "acceptance_rate": 0.9883381924198251,
+      "tokens_per_round": 6.557377049180328
+     }
+    }
+   ],
+   [
+    {
+     "wall": 3.9926838874816895,
+     "completion": 400,
+     "rounds": 57,
+     "drafted": 348,
+     "accepted": 342,
+     "decode_s": 3.695086528,
+     "tensorfold": {
+      "enable_thinking": true,
+      "reasoning_effort": "xhigh",
+      "engine": "lanes",
+      "tokens_per_second": 103.83033812560394,
+      "seconds": 3.84280748,
+      "prefill_seconds": 0.147720952,
+      "prefill_widths": [
+       33
+      ],
+      "prefill_raised": [],
+      "time_to_first_token": 0.148913256,
+      "sampling": "exact",
+      "drafts": true,
+      "token_sha256": "5897ae285096510da16beca6b2c7702328de2bc07eaff5d63895431185661542",
+      "min_rows": 2
+     },
+     "speculative": {
+      "rounds": 57,
+      "drafted": 348,
+      "accepted": 342,
+      "acceptance_rate": 0.9827586206896551,
+      "tokens_per_round": 7.017543859649122
+     }
+    }
+   ]
+  ]
+ },
+ "structured-x4": {
+  "summary": [
+   {
+    "tps": 218.062898815548,
+    "tok_round": 6.709796206618241,
+    "round_ms": 123.26677480372213,
+    "drafted_round": 5.809409049636804,
+    "accept": 0.9798309996024634
+   },
+   {
+    "tps": 245.93906736662387,
+    "tok_round": 6.926799758015728,
+    "round_ms": 113.08067097912887,
+    "drafted_round": 5.957199032062916,
+    "accept": 0.9920183673212695
+   }
+  ],
+  "streams": [
+   [
+    {
+     "wall": 8.103020191192627,
+     "completion": 400,
+     "rounds": 60,
+     "drafted": 351,
+     "accepted": 339,
+     "decode_s": 7.807239178000001,
+     "tensorfold": {
+      "enable_thinking": true,
+      "reasoning_effort": "xhigh",
+      "engine": "lanes",
+      "tokens_per_second": 50.16631720238031,
+      "seconds": 7.953543777,
+      "prefill_seconds": 0.146304599,
+      "prefill_widths": [
+       33
+      ],
+      "prefill_raised": [],
+      "time_to_first_token": 0.147585512,
+      "sampling": "exact",
+      "drafts": true,
+      "token_sha256": "01b35c04fd81de67701738778e042607d7f2637cb5a7ccbc2064d8d9e0804bd7",
+      "min_rows": 2
+     },
+     "speculative": {
+      "rounds": 60,
+      "drafted": 351,
+      "accepted": 339,
+      "acceptance_rate": 0.9658119658119658,
+      "tokens_per_round": 6.666666666666667
+     }
+    },
+    {
+     "wall": 8.008708238601685,
+     "completion": 400,
+     "rounds": 59,
+     "drafted": 345,
+     "accepted": 340,
+     "decode_s": 7.531235628,
+     "tensorfold": {
+      "enable_thinking": true,
+      "reasoning_effort": "xhigh",
+      "engine": "lanes",
+      "tokens_per_second": 51.8496582306062,
+      "seconds": 7.695325555,
+      "prefill_seconds": 0.164089927,
+      "prefill_widths": [
+       33
+      ],
+      "prefill_raised": [],
+      "time_to_first_token": 0.312050911,
+      "sampling": "exact",
+      "drafts": true,
+      "token_sha256": "97246407d03ed5f044932dcdc37475181572dffe3ce6587f75cbf47f38c3bc02",
+      "min_rows": 2
+     },
+     "speculative": {
+      "rounds": 59,
+      "drafted": 345,
+      "accepted": 340,
+      "acceptance_rate": 0.9855072463768116,
+      "tokens_per_round": 6.779661016949152
+     }
+    },
+    {
+     "wall": 8.376473426818848,
+     "completion": 400,
+     "rounds": 64,
+     "drafted": 342,
+     "accepted": 335,
+     "decode_s": 7.225162309,
+     "tensorfold": {
+      "enable_thinking": true,
+      "reasoning_effort": "xhigh",
+      "engine": "lanes",
+      "tokens_per_second": 51.638627884377776,
+      "seconds": 7.726773858,
+      "prefill_seconds": 0.501611549,
+      "prefill_widths": [
+       33
+      ],
+      "prefill_raised": [],
+      "time_to_first_token": 0.647228387,
+      "sampling": "exact",
+      "drafts": true,
+      "token_sha256": "fe392af76790cc2f674cdf21b4968e5b3aa148b51dba5de7bc941b6fe3ca9887",
+      "min_rows": 1
+     },
+     "speculative": {
+      "rounds": 64,
+      "drafted": 342,
+      "accepted": 335,
+      "acceptance_rate": 0.97953216374269,
+      "tokens_per_round": 6.25
+     }
+    },
+    {
+     "wall": 7.662314414978027,
+     "completion": 400,
+     "rounds": 56,
+     "drafted": 347,
+     "accepted": 343,
+     "decode_s": 6.854692525999999,
+     "tensorfold": {
+      "enable_thinking": true,
+      "reasoning_effort": "xhigh",
+      "engine": "lanes",
+      "tokens_per_second": 55.53481441585123,
+      "seconds": 7.184682333,
+      "prefill_seconds": 0.329989807,
+      "prefill_widths": [
+       33
+      ],
+      "prefill_raised": [],
+      "time_to_first_token": 0.476147349,
+      "sampling": "exact",
+      "drafts": true,
+      "token_sha256": "51d95356f60b9d5902c6989c9b20dfb413131c72b56612efb615aec197b6356b",
+      "min_rows": 2
+     },
+     "speculative": {
+      "rounds": 56,
+      "drafted": 347,
+      "accepted": 343,
+      "acceptance_rate": 0.9884726224783862,
+      "tokens_per_round": 7.142857142857143
+     }
+    }
+   ],
+   [
+    {
+     "wall": 7.323124885559082,
+     "completion": 400,
+     "rounds": 58,
+     "drafted": 342,
+     "accepted": 341,
+     "decode_s": 5.988318217,
+     "tensorfold": {
+      "enable_thinking": true,
+      "reasoning_effort": "xhigh",
+      "engine": "lanes",
+      "tokens_per_second": 60.64914294377302,
+      "seconds": 6.578823387,
+      "prefill_seconds": 0.59050517,
+      "prefill_widths": [
+       33
+      ],
+      "prefill_raised": [],
+      "time_to_first_token": 0.741475117,
+      "sampling": "exact",
+      "drafts": true,
+      "token_sha256": "96cd96a531bebead09617b43d14a8e1ce33c2a69bd03c2b4950411246ad77b5e",
+      "min_rows": 2
+     },
+     "speculative": {
+      "rounds": 58,
+      "drafted": 342,
+      "accepted": 341,
+      "acceptance_rate": 0.9970760233918129,
+      "tokens_per_round": 6.896551724137931
+     }
+    },
+    {
+     "wall": 7.322440147399902,
+     "completion": 400,
+     "rounds": 58,
+     "drafted": 344,
+     "accepted": 341,
+     "decode_s": 7.018223170000001,
+     "tensorfold": {
+      "enable_thinking": true,
+      "reasoning_effort": "xhigh",
+      "engine": "lanes",
+      "tokens_per_second": 55.656149287264235,
+      "seconds": 7.169019149,
+      "prefill_seconds": 0.150795979,
+      "prefill_widths": [
+       33
+      ],
+      "prefill_raised": [],
+      "time_to_first_token": 0.151551052,
+      "sampling": "exact",
+      "drafts": true,
+      "token_sha256": "5897ae285096510da16beca6b2c7702328de2bc07eaff5d63895431185661542",
+      "min_rows": 2
+     },
+     "speculative": {
+      "rounds": 58,
+      "drafted": 344,
+      "accepted": 341,
+      "acceptance_rate": 0.9912790697674418,
+      "tokens_per_round": 6.896551724137931
+     }
+    },
+    {
+     "wall": 7.230389356613159,
+     "completion": 400,
+     "rounds": 57,
+     "drafted": 346,
+     "accepted": 342,
+     "decode_s": 6.312015507,
+     "tensorfold": {
+      "enable_thinking": true,
+      "reasoning_effort": "xhigh",
+      "engine": "lanes",
+      "tokens_per_second": 59.601830188529874,
+      "seconds": 6.694425301,
+      "prefill_seconds": 0.382409794,
+      "prefill_widths": [
+       33
+      ],
+      "prefill_raised": [],
+      "time_to_first_token": 0.533767773,
+      "sampling": "exact",
+      "drafts": true,
+      "token_sha256": "1d2d7d93a276aaab93b496c8d2d3fb4ee4168ee2ccac6340cf611685166de2d6",
+      "min_rows": 2
+     },
+     "speculative": {
+      "rounds": 57,
+      "drafted": 346,
+      "accepted": 342,
+      "acceptance_rate": 0.9884393063583815,
+      "tokens_per_round": 7.017543859649122
+     }
+    },
+    {
+     "wall": 7.322572469711304,
+     "completion": 400,
+     "rounds": 58,
+     "drafted": 344,
+     "accepted": 341,
+     "decode_s": 6.805421659,
+     "tensorfold": {
+      "enable_thinking": true,
+      "reasoning_effort": "xhigh",
+      "engine": "lanes",
+      "tokens_per_second": 57.10362679995061,
+      "seconds": 6.987296996,
+      "prefill_seconds": 0.181875337,
+      "prefill_widths": [
+       33
+      ],
+      "prefill_raised": [],
+      "time_to_first_token": 0.333536068,
+      "sampling": "exact",
+      "drafts": true,
+      "token_sha256": "5897ae285096510da16beca6b2c7702328de2bc07eaff5d63895431185661542",
+      "min_rows": 2
+     },
+     "speculative": {
+      "rounds": 58,
+      "drafted": 344,
+      "accepted": 341,
+      "acceptance_rate": 0.9912790697674418,
+      "tokens_per_round": 6.896551724137931
+     }
+    }
+   ]
+  ]
+ },
+ "structured-x8": {
+  "summary": [
+   {
+    "tps": 221.30661251650017,
+    "tok_round": 3.9423137875507384,
+    "round_ms": 142.92938900257658,
+    "drafted_round": 2.9619291748869756,
+    "accept": 0.9900163434989717
+   },
+   {
+    "tps": 214.93658315596613,
+    "tok_round": 3.9571117033121275,
+    "round_ms": 147.59475147019992,
+    "drafted_round": 2.9828404287435517,
+    "accept": 0.9896787712972887
+   }
+  ],
+  "streams": [
+   [
+    {
+     "wall": 15.662325382232666,
+     "completion": 400,
+     "rounds": 99,
+     "drafted": 302,
+     "accepted": 300,
+     "decode_s": 15.343957847,
+     "tensorfold": {
+      "enable_thinking": true,
+      "reasoning_effort": "xhigh",
+      "engine": "lanes",
+      "tokens_per_second": 25.73876957868034,
+      "seconds": 15.501906522,
+      "prefill_seconds": 0.157948675,
+      "prefill_widths": [
+       33
+      ],
+      "prefill_raised": [],
+      "time_to_first_token": 0.158575427,
+      "sampling": "exact",
+      "drafts": true,
+      "token_sha256": "1becca8b2dbe924b82dfae9aa04f324d6c5c5161565718e702bd4771e4f89a7e",
+      "min_rows": 2
+     },
+     "speculative": {
+      "rounds": 99,
+      "drafted": 302,
+      "accepted": 300,
+      "acceptance_rate": 0.9933774834437086,
+      "tokens_per_round": 4.040404040404041
+     }
+    },
+    {
+     "wall": 15.947375535964966,
+     "completion": 400,
+     "rounds": 101,
+     "drafted": 300,
+     "accepted": 298,
+     "decode_s": 15.426180567,
+     "tensorfold": {
+      "enable_thinking": true,
+      "reasoning_effort": "xhigh",
+      "engine": "lanes",
+      "tokens_per_second": 25.565943333515648,
+      "seconds": 15.606699694,
+      "prefill_seconds": 0.180519127,
+      "prefill_widths": [
+       33
+      ],
+      "prefill_raised": [],
+      "time_to_first_token": 0.33865025,
+      "sampling": "exact",
+      "drafts": true,
+      "token_sha256": "2d7b470c91714c8cb8c2cfe444ea45339632d02f479cd4d48524115c1803aa34",
+      "min_rows": 1
+     },
+     "speculative": {
+      "rounds": 101,
+      "drafted": 300,
+      "accepted": 298,
+      "acceptance_rate": 0.9933333333333333,
+      "tokens_per_round": 3.9603960396039604
+     }
+    },
+    {
+     "wall": 15.947372198104858,
+     "completion": 400,
+     "rounds": 101,
+     "drafted": 301,
+     "accepted": 298,
+     "decode_s": 14.266007714999999,
+     "tensorfold": {
+      "enable_thinking": true,
+      "reasoning_effort": "xhigh",
+      "engine": "lanes",
+      "tokens_per_second": 26.552708528598615,
+      "seconds": 15.02671562,
+      "prefill_seconds": 0.760707905,
+      "prefill_widths": [
+       33
+      ],
+      "prefill_raised": [],
+      "time_to_first_token": 0.918143811,
+      "sampling": "exact",
+      "drafts": true,
+      "token_sha256": "5632de6b1e10e0f4bcb0488f20f65b9c49e2384e69f65d4516c4ac2dd4b1b922",
+      "min_rows": 2
+     },
+     "speculative": {
+      "rounds": 101,
+      "drafted": 301,
+      "accepted": 298,
+      "acceptance_rate": 0.9900332225913622,
+      "tokens_per_round": 3.9603960396039604
+     }
+    },
+    {
+     "wall": 16.172361612319946,
+     "completion": 400,
+     "rounds": 103,
+     "drafted": 298,
+     "accepted": 296,
+     "decode_s": 14.878339292,
+     "tensorfold": {
+      "enable_thinking": true,
+      "reasoning_effort": "xhigh",
+      "engine": "lanes",
+      "tokens_per_second": 25.832641277197233,
+      "seconds": 15.445575066,
+      "prefill_seconds": 0.567235774,
+      "prefill_widths": [
+       33
+      ],
+      "prefill_raised": [],
+      "time_to_first_token": 0.724990529,
+      "sampling": "exact",
+      "drafts": true,
+      "token_sha256": "bb1b89ac1246ef2e7fd111284c4661426bb6fddc2fee0d9f100717b880aa5948",
+      "min_rows": 1
+     },
+     "speculative": {
+      "rounds": 103,
+      "drafted": 298,
+      "accepted": 296,
+      "acceptance_rate": 0.9932885906040269,
+      "tokens_per_round": 3.883495145631068
+     }
+    },
+    {
+     "wall": 15.94675898551941,
+     "completion": 400,
+     "rounds": 101,
+     "drafted": 301,
+     "accepted": 298,
+     "decode_s": 15.041544977000001,
+     "tensorfold": {
+      "enable_thinking": true,
+      "reasoning_effort": "xhigh",
+      "engine": "lanes",
+      "tokens_per_second": 25.88480134603105,
+      "seconds": 15.414450923,
+      "prefill_seconds": 0.372905946,
+      "prefill_widths": [
+       33
+      ],
+      "prefill_raised": [],
+      "time_to_first_token": 0.53050286,
+      "sampling": "exact",
+      "drafts": true,
+      "token_sha256": "8c48ef0d4fd5e61ae235527aff56cc54ec988ae2f2b9b97d58dcc184719e8725",
+      "min_rows": 1
+     },
+     "speculative": {
+      "rounds": 101,
+      "drafted": 301,
+      "accepted": 298,
+      "acceptance_rate": 0.9900332225913622,
+      "tokens_per_round": 3.9603960396039604
+     }
+    },
+    {
+     "wall": 16.305158138275146,
+     "completion": 400,
+     "rounds": 105,
+     "drafted": 298,
+     "accepted": 294,
+     "decode_s": 14.291658845999999,
+     "tensorfold": {
+      "enable_thinking": true,
+      "reasoning_effort": "xhigh",
+      "engine": "lanes",
+      "tokens_per_second": 26.2169138511174,
+      "seconds": 15.219182634,
+      "prefill_seconds": 0.927523788,
+      "prefill_widths": [
+       33
+      ],
+      "prefill_raised": [],
+      "time_to_first_token": 1.084070654,
+      "sampling": "exact",
+      "drafts": true,
+      "token_sha256": "8ef8c320cc918f471343b0d92e6f1e74daee96ec7e72938469b0f1a10e72267a",
+      "min_rows": 1
+     },
+     "speculative": {
+      "rounds": 105,
+      "drafted": 298,
+      "accepted": 294,
+      "acceptance_rate": 0.9865771812080537,
+      "tokens_per_round": 3.8095238095238093
+     }
+    },
+    {
+     "wall": 16.171261310577393,
+     "completion": 400,
+     "rounds": 103,
+     "drafted": 301,
+     "accepted": 296,
+     "decode_s": 13.469907937,
+     "tensorfold": {
+      "enable_thinking": true,
+      "reasoning_effort": "xhigh",
+      "engine": "lanes",
+      "tokens_per_second": 27.06648626236267,
+      "seconds": 14.741477565,
+      "prefill_seconds": 1.271569628,
+      "prefill_widths": [
+       33
+      ],
+      "prefill_raised": [],
+      "time_to_first_token": 1.427599549,
+      "sampling": "exact",
+      "drafts": true,
+      "token_sha256": "03a5a8d4af60807cbbf171ff8d2eb1202880bc8cee8e528874e94b9df4f24614",
+      "min_rows": 1
+     },
+     "speculative": {
+      "rounds": 103,
+      "drafted": 301,
+      "accepted": 296,
+      "acceptance_rate": 0.9833887043189369,
+      "tokens_per_round": 3.883495145631068
+     }
+    },
+    {
+     "wall": 15.660101413726807,
+     "completion": 400,
+     "rounds": 99,
+     "drafted": 303,
+     "accepted": 300,
+     "decode_s": 13.285864434,
+     "tensorfold": {
+      "enable_thinking": true,
+      "reasoning_effort": "xhigh",
+      "engine": "lanes",
+      "tokens_per_second": 27.719942680177304,
+      "seconds": 14.393969158,
+      "prefill_seconds": 1.108104724,
+      "prefill_widths": [
+       33
+      ],
+      "prefill_raised": [],
+      "time_to_first_token": 1.264683557,
+      "sampling": "exact",
+      "drafts": true,
+      "token_sha256": "5a486e9cc3588024af7ad4ab4bd65e30d77953c3bdb17728fd22065c52e62c7a",
+      "min_rows": 2
+     },
+     "speculative": {
+      "rounds": 99,
+      "drafted": 303,
+      "accepted": 300,
+      "acceptance_rate": 0.9900990099009901,
+      "tokens_per_round": 4.040404040404041
+     }
+    }
+   ],
+   [
+    {
+     "wall": 16.474675178527832,
+     "completion": 400,
+     "rounds": 103,
+     "drafted": 306,
+     "accepted": 297,
+     "decode_s": 16.17618692,
+     "tensorfold": {
+      "enable_thinking": true,
+      "reasoning_effort": "xhigh",
+      "engine": "lanes",
+      "tokens_per_second": 24.442049747995107,
+      "seconds": 16.324326483,
+      "prefill_seconds": 0.148139563,
+      "prefill_widths": [
+       33
+      ],
+      "prefill_raised": [],
+      "time_to_first_token": 0.148970363,
+      "sampling": "exact",
+      "drafts": true,
+      "token_sha256": "28e880f913539046f61280dba3a96cf9c5b5635b7866098959b036850eb2c487",
+      "min_rows": 1
+     },
+     "speculative": {
+      "rounds": 103,
+      "drafted": 306,
+      "accepted": 297,
+      "acceptance_rate": 0.9705882352941176,
+      "tokens_per_round": 3.883495145631068
+     }
+    },
+    {
+     "wall": 15.691814422607422,
+     "completion": 400,
+     "rounds": 97,
+     "drafted": 304,
+     "accepted": 303,
+     "decode_s": 15.216937728,
+     "tensorfold": {
+      "enable_thinking": true,
+      "reasoning_effort": "xhigh",
+      "engine": "lanes",
+      "tokens_per_second": 25.94390038607161,
+      "seconds": 15.379337496,
+      "prefill_seconds": 0.162399768,
+      "prefill_widths": [
+       33
+      ],
+      "prefill_raised": [],
+      "time_to_first_token": 0.310983395,
+      "sampling": "exact",
+      "drafts": true,
+      "token_sha256": "0194d024a579779e839e9be6dd3260583ce65b766beee16709371cf754c658e1",
+      "min_rows": 2
+     },
+     "speculative": {
+      "rounds": 97,
+      "drafted": 304,
+      "accepted": 303,
+      "acceptance_rate": 0.9967105263157895,
+      "tokens_per_round": 4.123711340206185
+     }
+    },
+    {
+     "wall": 16.14265251159668,
+     "completion": 400,
+     "rounds": 100,
+     "drafted": 301,
+     "accepted": 299,
+     "decode_s": 14.655692261999999,
+     "tensorfold": {
+      "enable_thinking": true,
+      "reasoning_effort": "xhigh",
+      "engine": "lanes",
+      "tokens_per_second": 26.036562143735814,
+      "seconds": 15.324603832,
+      "prefill_seconds": 0.66891157,
+      "prefill_widths": [
+       33
+      ],
+      "prefill_raised": [],
+      "time_to_first_token": 0.81409201,
+      "sampling": "exact",
+      "drafts": true,
+      "token_sha256": "74a783d7995c760d72518f4b38855d13552dabf153c570fed4628f8e825d25fd",
+      "min_rows": 1
+     },
+     "speculative": {
+      "rounds": 100,
+      "drafted": 301,
+      "accepted": 299,
+      "acceptance_rate": 0.9933554817275747,
+      "tokens_per_round": 4.0
+     }
+    },
+    {
+     "wall": 16.391602277755737,
+     "completion": 400,
+     "rounds": 102,
+     "drafted": 300,
+     "accepted": 298,
+     "decode_s": 15.585117966,
+     "tensorfold": {
+      "enable_thinking": true,
+      "reasoning_effort": "xhigh",
+      "engine": "lanes",
+      "tokens_per_second": 25.072339036202656,
+      "seconds": 15.913952002,
+      "prefill_seconds": 0.328834036,
+      "prefill_widths": [
+       33
+      ],
+      "prefill_raised": [],
+      "time_to_first_token": 0.476194078,
+      "sampling": "exact",
+      "drafts": true,
+      "token_sha256": "787786f52391ed31010e706397d721265709f90a1dd59ac5f8cdb69693a54987",
+      "min_rows": 1
+     },
+     "speculative": {
+      "rounds": 102,
+      "drafted": 300,
+      "accepted": 298,
+      "acceptance_rate": 0.9933333333333333,
+      "tokens_per_round": 3.9215686274509802
+     }
+    },
+    {
+     "wall": 16.14234232902527,
+     "completion": 400,
+     "rounds": 100,
+     "drafted": 300,
+     "accepted": 299,
+     "decode_s": 14.989088206,
+     "tensorfold": {
+      "enable_thinking": true,
+      "reasoning_effort": "xhigh",
+      "engine": "lanes",
+      "tokens_per_second": 25.75644432492146,
+      "seconds": 15.491268708,
+      "prefill_seconds": 0.502180502,
+      "prefill_widths": [
+       33
+      ],
+      "prefill_raised": [],
+      "time_to_first_token": 0.648761471,
+      "sampling": "exact",
+      "drafts": true,
+      "token_sha256": "4a397b7cd395f4bb8b93ccf2177c46081e9ba078b179b8dc116ed64cdfaa58ec",
+      "min_rows": 1
+     },
+     "speculative": {
+      "rounds": 100,
+      "drafted": 300,
+      "accepted": 299,
+      "acceptance_rate": 0.9966666666666667,
+      "tokens_per_round": 4.0
+     }
+    },
+    {
+     "wall": 16.527313232421875,
+     "completion": 400,
+     "rounds": 104,
+     "drafted": 297,
+     "accepted": 295,
+     "decode_s": 14.048802128999998,
+     "tensorfold": {
+      "enable_thinking": true,
+      "reasoning_effort": "xhigh",
+      "engine": "lanes",
+      "tokens_per_second": 26.225508570366454,
+      "seconds": 15.214194948,
+      "prefill_seconds": 1.165392819,
+      "prefill_widths": [
+       33
+      ],
+      "prefill_raised": [],
+      "time_to_first_token": 1.30940617,
+      "sampling": "exact",
+      "drafts": true,
+      "token_sha256": "3d940add4ad92845ee6bbb896966826f378ae179208872364a8f58a328a02232",
+      "min_rows": 1
+     },
+     "speculative": {
+      "rounds": 104,
+      "drafted": 297,
+      "accepted": 295,
+      "acceptance_rate": 0.9932659932659933,
+      "tokens_per_round": 3.8461538461538463
+     }
+    },
+    {
+     "wall": 16.26980972290039,
+     "completion": 400,
+     "rounds": 101,
+     "drafted": 302,
+     "accepted": 299,
+     "decode_s": 14.438362795,
+     "tensorfold": {
+      "enable_thinking": true,
+      "reasoning_effort": "xhigh",
+      "engine": "lanes",
+      "tokens_per_second": 26.111258542359092,
+      "seconds": 15.280764784,
+      "prefill_seconds": 0.842401989,
+      "prefill_widths": [
+       33
+      ],
+      "prefill_raised": [],
+      "time_to_first_token": 0.987197356,
+      "sampling": "exact",
+      "drafts": true,
+      "token_sha256": "8f537d90285cd472e237461dad6f3b0853991d0abaff30958fe5d46149fe3e56",
+      "min_rows": 1
+     },
+     "speculative": {
+      "rounds": 101,
+      "drafted": 302,
+      "accepted": 299,
+      "acceptance_rate": 0.9900662251655629,
+      "tokens_per_round": 3.9603960396039604
+     }
+    },
+    {
+     "wall": 16.38948702812195,
+     "completion": 400,
+     "rounds": 102,
+     "drafted": 302,
+     "accepted": 297,
+     "decode_s": 14.234120894,
+     "tensorfold": {
+      "enable_thinking": true,
+      "reasoning_effort": "xhigh",
+      "engine": "lanes",
+      "tokens_per_second": 26.183757446752654,
+      "seconds": 15.238454634,
+      "prefill_seconds": 1.00433374,
+      "prefill_widths": [
+       33
+      ],
+      "prefill_raised": [],
+      "time_to_first_token": 1.148837859,
+      "sampling": "exact",
+      "drafts": true,
+      "token_sha256": "4d943fa25a89fa3885d1e5b3601b8cea2ae1d8f5e346b798ab3a9a9af6e623ce",
+      "min_rows": 1
+     },
+     "speculative": {
+      "rounds": 102,
+      "drafted": 302,
+      "accepted": 297,
+      "acceptance_rate": 0.9834437086092715,
+      "tokens_per_round": 3.9215686274509802
+     }
+    }
+   ]
+  ]
+ },
+ "prose-x1": {
+  "summary": [
+   {
+    "tps": 57.034710109162766,
+    "tok_round": 3.007518796992481,
+    "round_ms": 52.731376932330825,
+    "drafted_round": 2.661654135338346,
+    "accept": 0.7542372881355932
+   },
+   {
+    "tps": 56.822357123368974,
+    "tok_round": 2.962962962962963,
+    "round_ms": 52.144316303703704,
+    "drafted_round": 2.8740740740740742,
+    "accept": 0.6829896907216495
+   }
+  ],
+  "streams": [
+   [
+    {
+     "wall": 7.349575996398926,
+     "completion": 400,
+     "rounds": 133,
+     "drafted": 354,
+     "accepted": 267,
+     "decode_s": 7.013273132,
+     "tensorfold": {
+      "enable_thinking": true,
+      "reasoning_effort": "xhigh",
+      "engine": "lanes",
+      "tokens_per_second": 55.567561916877615,
+      "seconds": 7.180448201,
+      "prefill_seconds": 0.167175069,
+      "prefill_widths": [
+       39
+      ],
+      "prefill_raised": [],
+      "time_to_first_token": 0.167820079,
+      "sampling": "exact",
+      "drafts": true,
+      "token_sha256": "829d33b77c88206418563ef433730f86a4dbed2cc76c8e90aa453680435b25bc",
+      "min_rows": 2
+     },
+     "speculative": {
+      "rounds": 133,
+      "drafted": 354,
+      "accepted": 267,
+      "acceptance_rate": 0.7542372881355932,
+      "tokens_per_round": 3.007518796992481
+     }
+    }
+   ],
+   [
+    {
+     "wall": 7.371231317520142,
+     "completion": 400,
+     "rounds": 135,
+     "drafted": 388,
+     "accepted": 265,
+     "decode_s": 7.039482701,
+     "tensorfold": {
+      "enable_thinking": true,
+      "reasoning_effort": "xhigh",
+      "engine": "lanes",
+      "tokens_per_second": 55.38423789538778,
+      "seconds": 7.204215769,
+      "prefill_seconds": 0.164733068,
+      "prefill_widths": [
+       39
+      ],
+      "prefill_raised": [],
+      "time_to_first_token": 0.165474957,
+      "sampling": "exact",
+      "drafts": true,
+      "token_sha256": "938b2aebf414605e0c84b257528e317e8dd9214b3c110a0b695e8f314821b408",
+      "min_rows": 2
+     },
+     "speculative": {
+      "rounds": 135,
+      "drafted": 388,
+      "accepted": 265,
+      "acceptance_rate": 0.6829896907216495,
+      "tokens_per_round": 2.962962962962963
+     }
+    }
+   ]
+  ]
+ },
+ "prose-x4": {
+  "summary": [
+   {
+    "tps": 101.86979252801301,
+    "tok_round": 2.638734106688682,
+    "round_ms": 103.58951615793171,
+    "drafted_round": 2.297076176010388,
+    "accept": 0.7118367325419858
+   },
+   {
+    "tps": 99.69772927308948,
+    "tok_round": 2.5644411974073655,
+    "round_ms": 102.89580550580743,
+    "drafted_round": 2.210894121614027,
+    "accept": 0.7072352347699817
+   }
+  ],
+  "streams": [
+   [
+    {
+     "wall": 17.1985867023468,
+     "completion": 400,
+     "rounds": 163,
+     "drafted": 332,
+     "accepted": 236,
+     "decode_s": 16.879468525999997,
+     "tensorfold": {
+      "enable_thinking": true,
+      "reasoning_effort": "xhigh",
+      "engine": "lanes",
+      "tokens_per_second": 23.418304818618562,
+      "seconds": 17.037953989,
+      "prefill_seconds": 0.158485463,
+      "prefill_widths": [
+       39
+      ],
+      "prefill_raised": [],
+      "time_to_first_token": 0.159194247,
+      "sampling": "exact",
+      "drafts": true,
+      "token_sha256": "2c580c5e0d1886ac81e9eb71134708c2a3ed86827a2aba4934743bf4c792cf16",
+      "min_rows": 1
+     },
+     "speculative": {
+      "rounds": 163,
+      "drafted": 332,
+      "accepted": 236,
+      "acceptance_rate": 0.7108433734939759,
+      "tokens_per_round": 2.4539877300613497
+     }
+    },
+    {
+     "wall": 16.43478751182556,
+     "completion": 400,
+     "rounds": 150,
+     "drafted": 356,
+     "accepted": 249,
+     "decode_s": 15.551213945,
+     "tensorfold": {
+      "enable_thinking": true,
+      "reasoning_effort": "xhigh",
+      "engine": "lanes",
+      "tokens_per_second": 25.073798837047786,
+      "seconds": 15.913025489,
+      "prefill_seconds": 0.361811544,
+      "prefill_widths": [
+       39
+      ],
+      "prefill_raised": [],
+      "time_to_first_token": 0.51946059,
+      "sampling": "exact",
+      "drafts": true,
+      "token_sha256": "4cb3405eaf80bed53ed29deb1a2495e2104c00b40f689a82bfa7d4c15f527d65",
+      "min_rows": 2
+     },
+     "speculative": {
+      "rounds": 150,
+      "drafted": 356,
+      "accepted": 249,
+      "acceptance_rate": 0.699438202247191,
+      "tokens_per_round": 2.6666666666666665
+     }
+    },
+    {
+     "wall": 15.57075834274292,
+     "completion": 400,
+     "rounds": 141,
+     "drafted": 367,
+     "accepted": 259,
+     "decode_s": 15.048116771,
+     "tensorfold": {
+      "enable_thinking": true,
+      "reasoning_effort": "xhigh",
+      "engine": "lanes",
+      "tokens_per_second": 26.198867147011835,
+      "seconds": 15.229666144,
+      "prefill_seconds": 0.181549373,
+      "prefill_widths": [
+       39
+      ],
+      "prefill_raised": [],
+      "time_to_first_token": 0.339457475,
+      "sampling": "exact",
+      "drafts": true,
+      "token_sha256": "7fbf2a0ea2456127c0ae89b60a3e94e8c87f271ef4310a57e7e8cac71ff9c80e",
+      "min_rows": 1
+     },
+     "speculative": {
+      "rounds": 141,
+      "drafted": 367,
+      "accepted": 259,
+      "acceptance_rate": 0.7057220708446866,
+      "tokens_per_round": 2.8368794326241136
+     }
+    },
+    {
+     "wall": 16.72275471687317,
+     "completion": 400,
+     "rounds": 154,
+     "drafted": 335,
+     "accepted": 245,
+     "decode_s": 15.462223846,
+     "tensorfold": {
+      "enable_thinking": true,
+      "reasoning_effort": "xhigh",
+      "engine": "lanes",
+      "tokens_per_second": 24.91752199985909,
+      "seconds": 16.012828242,
+      "prefill_seconds": 0.550604396,
+      "prefill_widths": [
+       39
+      ],
+      "prefill_raised": [],
+      "time_to_first_token": 0.708340194,
+      "sampling": "exact",
+      "drafts": true,
+      "token_sha256": "9bb17964be8b6215811655779a199618daa20842453287f349084ad214e29c6c",
+      "min_rows": 1
+     },
+     "speculative": {
+      "rounds": 154,
+      "drafted": 335,
+      "accepted": 245,
+      "acceptance_rate": 0.7313432835820896,
+      "tokens_per_round": 2.5974025974025974
+     }
+    }
+   ],
+   [
+    {
+     "wall": 17.71111035346985,
+     "completion": 400,
+     "rounds": 168,
+     "drafted": 312,
+     "accepted": 232,
+     "decode_s": 17.376549524999998,
+     "tensorfold": {
+      "enable_thinking": true,
+      "reasoning_effort": "xhigh",
+      "engine": "lanes",
+      "tokens_per_second": 22.744297064229364,
+      "seconds": 17.542859156,
+      "prefill_seconds": 0.166309631,
+      "prefill_widths": [
+       39
+      ],
+      "prefill_raised": [],
+      "time_to_first_token": 0.167073856,
+      "sampling": "exact",
+      "drafts": true,
+      "token_sha256": "ed56978d330e0ed121c5cdb75758cdce5956e42b6b1bec48b6fa61cfbf04219d",
+      "min_rows": 1
+     },
+     "speculative": {
+      "rounds": 168,
+      "drafted": 312,
+      "accepted": 232,
+      "acceptance_rate": 0.7435897435897436,
+      "tokens_per_round": 2.380952380952381
+     }
+    },
+    {
+     "wall": 17.518062591552734,
+     "completion": 400,
+     "rounds": 164,
+     "drafted": 352,
+     "accepted": 236,
+     "decode_s": 16.981695335999998,
+     "tensorfold": {
+      "enable_thinking": true,
+      "reasoning_effort": "xhigh",
+      "engine": "lanes",
+      "tokens_per_second": 23.243730442067292,
+      "seconds": 17.165919257,
+      "prefill_seconds": 0.184223921,
+      "prefill_widths": [
+       39
+      ],
+      "prefill_raised": [],
+      "time_to_first_token": 0.350665889,
+      "sampling": "exact",
+      "drafts": true,
+      "token_sha256": "2dac32a4a97099a631bfd981a4be8364e5262030fb0b6f3b24b8e3aa7cc1a607",
+      "min_rows": 1
+     },
+     "speculative": {
+      "rounds": 164,
+      "drafted": 352,
+      "accepted": 236,
+      "acceptance_rate": 0.6704545454545454,
+      "tokens_per_round": 2.4390243902439024
+     }
+    },
+    {
+     "wall": 16.84386110305786,
+     "completion": 400,
+     "rounds": 155,
+     "drafted": 345,
+     "accepted": 244,
+     "decode_s": 15.584943622,
+     "tensorfold": {
+      "enable_thinking": true,
+      "reasoning_effort": "xhigh",
+      "engine": "lanes",
+      "tokens_per_second": 24.73541443137019,
+      "seconds": 16.13071821,
+      "prefill_seconds": 0.545774588,
+      "prefill_widths": [
+       39
+      ],
+      "prefill_raised": [],
+      "time_to_first_token": 0.711583659,
+      "sampling": "exact",
+      "drafts": true,
+      "token_sha256": "ed1e4dd2a750a36be66e74bd226b60ad95e20cf2144488f7b6180891e49717b0",
+      "min_rows": 1
+     },
+     "speculative": {
+      "rounds": 155,
+      "drafted": 345,
+      "accepted": 244,
+      "acceptance_rate": 0.7072463768115942,
+      "tokens_per_round": 2.5806451612903225
+     }
+    },
+    {
+     "wall": 15.47879934310913,
+     "completion": 400,
+     "rounds": 140,
+     "drafted": 366,
+     "accepted": 259,
+     "decode_s": 14.567900685,
+     "tensorfold": {
+      "enable_thinking": true,
+      "reasoning_effort": "xhigh",
+      "engine": "lanes",
+      "tokens_per_second": 26.707030007371657,
+      "seconds": 14.93988661,
+      "prefill_seconds": 0.371985925,
+      "prefill_widths": [
+       39
+      ],
+      "prefill_raised": [],
+      "time_to_first_token": 0.537506004,
+      "sampling": "exact",
+      "drafts": true,
+      "token_sha256": "d84d0fcff03511e7fb84f3285448a7bb3e917d1fcf87d693c20b9787f5f6fa12",
+      "min_rows": 1
+     },
+     "speculative": {
+      "rounds": 140,
+      "drafted": 366,
+      "accepted": 259,
+      "acceptance_rate": 0.7076502732240437,
+      "tokens_per_round": 2.857142857142857
+     }
+    }
+   ]
+  ]
+ },
+ "prose-x8": {
+  "summary": [
+   {
+    "tps": 130.72441692987414,
+    "tok_round": 2.632852085728655,
+    "round_ms": 161.28450801923913,
+    "drafted_round": 2.197816262304867,
+    "accept": 0.7407552155504624
+   },
+   {
+    "tps": 134.54748226508133,
+    "tok_round": 2.6718456893625966,
+    "round_ms": 158.9441906781488,
+    "drafted_round": 2.249602547573365,
+    "accept": 0.7410273330245136
+   }
+  ],
+  "streams": [
+   [
+    {
+     "wall": 26.085471153259277,
+     "completion": 400,
+     "rounds": 153,
+     "drafted": 326,
+     "accepted": 246,
+     "decode_s": 25.76789181,
+     "tensorfold": {
+      "enable_thinking": true,
+      "reasoning_effort": "xhigh",
+      "engine": "lanes",
+      "tokens_per_second": 15.390452791386478,
+      "seconds": 25.925163178,
+      "prefill_seconds": 0.157271368,
+      "prefill_widths": [
+       39
+      ],
+      "prefill_raised": [],
+      "time_to_first_token": 0.157974585,
+      "sampling": "exact",
+      "drafts": true,
+      "token_sha256": "9c8a5f5f21079a0fa0a70d458ea9fc47a1071249ba2b8808de9c82f3771e98c3",
+      "min_rows": 1
+     },
+     "speculative": {
+      "rounds": 153,
+      "drafted": 326,
+      "accepted": 246,
+      "acceptance_rate": 0.754601226993865,
+      "tokens_per_round": 2.6143790849673203
+     }
+    },
+    {
+     "wall": 26.462923765182495,
+     "completion": 400,
+     "rounds": 160,
+     "drafted": 332,
+     "accepted": 239,
+     "decode_s": 25.216702835,
+     "tensorfold": {
+      "enable_thinking": true,
+      "reasoning_effort": "xhigh",
+      "engine": "lanes",
+      "tokens_per_second": 15.489235818708746,
+      "seconds": 25.759824737,
+      "prefill_seconds": 0.543121902,
+      "prefill_widths": [
+       39
+      ],
+      "prefill_raised": [],
+      "time_to_first_token": 0.698966373,
+      "sampling": "exact",
+      "drafts": true,
+      "token_sha256": "9f5d0cdc16eb4f240954e46b7d8ae88db84837fa120254cc4715429a4b73728e",
+      "min_rows": 1
+     },
+     "speculative": {
+      "rounds": 160,
+      "drafted": 332,
+      "accepted": 239,
+      "acceptance_rate": 0.7198795180722891,
+      "tokens_per_round": 2.5
+     }
+    },
+    {
+     "wall": 25.928829431533813,
+     "completion": 400,
+     "rounds": 151,
+     "drafted": 341,
+     "accepted": 248,
+     "decode_s": 25.040356997,
+     "tensorfold": {
+      "enable_thinking": true,
+      "reasoning_effort": "xhigh",
+      "engine": "lanes",
+      "tokens_per_second": 15.705723231430845,
+      "seconds": 25.404751766,
+      "prefill_seconds": 0.364394769,
+      "prefill_widths": [
+       39
+      ],
+      "prefill_raised": [],
+      "time_to_first_token": 0.520252168,
+      "sampling": "exact",
+      "drafts": true,
+      "token_sha256": "c9e240394a274d3cae7bdf0c062ee3bbd986da2869aae67d0e1253061861000e",
+      "min_rows": 1
+     },
+     "speculative": {
+      "rounds": 151,
+      "drafted": 341,
+      "accepted": 248,
+      "acceptance_rate": 0.7272727272727273,
+      "tokens_per_round": 2.6490066225165565
+     }
+    },
+    {
+     "wall": 26.024067640304565,
+     "completion": 400,
+     "rounds": 152,
+     "drafted": 326,
+     "accepted": 248,
+     "decode_s": 25.515114821,
+     "tensorfold": {
+      "enable_thinking": true,
+      "reasoning_effort": "xhigh",
+      "engine": "lanes",
+      "tokens_per_second": 15.53152689318335,
+      "seconds": 25.689682846,
+      "prefill_seconds": 0.174568025,
+      "prefill_widths": [
+       39
+      ],
+      "prefill_raised": [],
+      "time_to_first_token": 0.331430176,
+      "sampling": "exact",
+      "drafts": true,
+      "token_sha256": "e3744970aec18f43ddff3b79d74b673bb0647fabe082b1b2380005423501b432",
+      "min_rows": 1
+     },
+     "speculative": {
+      "rounds": 152,
+      "drafted": 326,
+      "accepted": 248,
+      "acceptance_rate": 0.7607361963190185,
+      "tokens_per_round": 2.6315789473684212
+     }
+    },
+    {
+     "wall": 26.023035764694214,
+     "completion": 400,
+     "rounds": 152,
+     "drafted": 341,
+     "accepted": 247,
+     "decode_s": 24.069193181000003,
+     "tensorfold": {
+      "enable_thinking": true,
+      "reasoning_effort": "xhigh",
+      "engine": "lanes",
+      "tokens_per_second": 15.98119363893364,
+      "seconds": 24.96684597,
+      "prefill_seconds": 0.897652789,
+      "prefill_widths": [
+       39
+      ],
+      "prefill_raised": [],
+      "time_to_first_token": 1.053114555,
+      "sampling": "exact",
+      "drafts": true,
+      "token_sha256": "4b70ec7c8fb3c453ea34064602d1140b0583777b9b66ad315fa7eee3ae7a9220",
+      "min_rows": 1
+     },
+     "speculative": {
+      "rounds": 152,
+      "drafted": 341,
+      "accepted": 247,
+      "acceptance_rate": 0.7243401759530792,
+      "tokens_per_round": 2.6315789473684212
+     }
+    },
+    {
+     "wall": 25.9271502494812,
+     "completion": 400,
+     "rounds": 151,
+     "drafted": 333,
+     "accepted": 248,
+     "decode_s": 23.630048113999997,
+     "tensorfold": {
+      "enable_thinking": true,
+      "reasoning_effort": "xhigh",
+      "engine": "lanes",
+      "tokens_per_second": 16.15408053255039,
+      "seconds": 24.699641629,
+      "prefill_seconds": 1.069593515,
+      "prefill_widths": [
+       39
+      ],
+      "prefill_raised": [],
+      "time_to_first_token": 1.225012801,
+      "sampling": "exact",
+      "drafts": true,
+      "token_sha256": "3835c0ee3de4e88e4a037c8fedd966ed35d0401f5d905307edbe3e73c55201ee",
+      "min_rows": 1
+     },
+     "speculative": {
+      "rounds": 151,
+      "drafted": 333,
+      "accepted": 248,
+      "acceptance_rate": 0.7447447447447447,
+      "tokens_per_round": 2.6490066225165565
+     }
+    },
+    {
+     "wall": 25.488163471221924,
+     "completion": 400,
+     "rounds": 148,
+     "drafted": 331,
+     "accepted": 252,
+     "decode_s": 23.884306776,
+     "tensorfold": {
+      "enable_thinking": true,
+      "reasoning_effort": "xhigh",
+      "engine": "lanes",
+      "tokens_per_second": 16.214493197808544,
+      "seconds": 24.607614628,
+      "prefill_seconds": 0.723307852,
+      "prefill_widths": [
+       39
+      ],
+      "prefill_raised": [],
+      "time_to_first_token": 0.879417619,
+      "sampling": "exact",
+      "drafts": true,
+      "token_sha256": "e8496f0253369129d6d36713d0c55ddad274566558c1cf0dac54e5d21cd024f1",
+      "min_rows": 1
+     },
+     "speculative": {
+      "rounds": 148,
+      "drafted": 331,
+      "accepted": 252,
+      "acceptance_rate": 0.7613293051359517,
+      "tokens_per_round": 2.7027027027027026
+     }
+    },
+    {
+     "wall": 25.64140486717224,
+     "completion": 400,
+     "rounds": 149,
+     "drafted": 341,
+     "accepted": 250,
+     "decode_s": 22.996736053,
+     "tensorfold": {
+      "enable_thinking": true,
+      "reasoning_effort": "xhigh",
+      "engine": "lanes",
+      "tokens_per_second": 16.459845296847124,
+      "seconds": 24.240811065,
+      "prefill_seconds": 1.244075012,
+      "prefill_widths": [
+       39
+      ],
+      "prefill_raised": [],
+      "time_to_first_token": 1.399287722,
+      "sampling": "exact",
+      "drafts": true,
+      "token_sha256": "9aa116c4c5eb047bf92b453517dfc29a54019e40542fdba1fd43e888f6711947",
+      "min_rows": 1
+     },
+     "speculative": {
+      "rounds": 149,
+      "drafted": 341,
+      "accepted": 250,
+      "acceptance_rate": 0.7331378299120235,
+      "tokens_per_round": 2.684563758389262
+     }
+    }
+   ],
+   [
+    {
+     "wall": 25.39248824119568,
+     "completion": 400,
+     "rounds": 150,
+     "drafted": 319,
+     "accepted": 249,
+     "decode_s": 24.854244125999998,
+     "tensorfold": {
+      "enable_thinking": true,
+      "reasoning_effort": "xhigh",
+      "engine": "lanes",
+      "tokens_per_second": 15.935231298237053,
+      "seconds": 25.038858397,
+      "prefill_seconds": 0.184614271,
+      "prefill_widths": [
+       39
+      ],
+      "prefill_raised": [],
+      "time_to_first_token": 0.350093627,
+      "sampling": "exact",
+      "drafts": true,
+      "token_sha256": "d5c789a8146312558575c5ba921db103012147c6b6d0b498d8fa140d8eb474de",
+      "min_rows": 1
+     },
+     "speculative": {
+      "rounds": 150,
+      "drafted": 319,
+      "accepted": 249,
+      "acceptance_rate": 0.780564263322884,
+      "tokens_per_round": 2.6666666666666665
+     }
+    },
+    {
+     "wall": 25.95041036605835,
+     "completion": 400,
+     "rounds": 154,
+     "drafted": 338,
+     "accepted": 245,
+     "decode_s": 25.616671528999998,
+     "tensorfold": {
+      "enable_thinking": true,
+      "reasoning_effort": "xhigh",
+      "engine": "lanes",
+      "tokens_per_second": 15.475708148244749,
+      "seconds": 25.782341989,
+      "prefill_seconds": 0.16567046,
+      "prefill_widths": [
+       39
+      ],
+      "prefill_raised": [],
+      "time_to_first_token": 0.166521662,
+      "sampling": "exact",
+      "drafts": true,
+      "token_sha256": "da3978441715ddbb997c37d83bbe4dd0e071e931c9f53d0ec2cf4115141ffb90",
+      "min_rows": 1
+     },
+     "speculative": {
+      "rounds": 154,
+      "drafted": 338,
+      "accepted": 245,
+      "acceptance_rate": 0.7248520710059172,
+      "tokens_per_round": 2.5974025974025974
+     }
+    },
+    {
+     "wall": 23.575575351715088,
+     "completion": 400,
+     "rounds": 138,
+     "drafted": 354,
+     "accepted": 261,
+     "decode_s": 22.68831521,
+     "tensorfold": {
+      "enable_thinking": true,
+      "reasoning_effort": "xhigh",
+      "engine": "lanes",
+      "tokens_per_second": 17.311618972862373,
+      "seconds": 23.048104318,
+      "prefill_seconds": 0.359789108,
+      "prefill_widths": [
+       39
+      ],
+      "prefill_raised": [],
+      "time_to_first_token": 0.524451934,
+      "sampling": "exact",
+      "drafts": true,
+      "token_sha256": "3c5106a5b812e0b1b3eaa46319f600117f8c9d78a2ca7d1779e882fa76f45261",
+      "min_rows": 1
+     },
+     "speculative": {
+      "rounds": 138,
+      "drafted": 354,
+      "accepted": 261,
+      "acceptance_rate": 0.7372881355932204,
+      "tokens_per_round": 2.898550724637681
+     }
+    },
+    {
+     "wall": 26.55955410003662,
+     "completion": 400,
+     "rounds": 163,
+     "drafted": 354,
+     "accepted": 236,
+     "decode_s": 23.885090083999998,
+     "tensorfold": {
+      "enable_thinking": true,
+      "reasoning_effort": "xhigh",
+      "engine": "lanes",
+      "tokens_per_second": 15.871967494740115,
+      "seconds": 25.138660354,
+      "prefill_seconds": 1.25357027,
+      "prefill_widths": [
+       39
+      ],
+      "prefill_raised": [],
+      "time_to_first_token": 1.417638181,
+      "sampling": "exact",
+      "drafts": true,
+      "token_sha256": "2d3892d49b52d1e3b897201354418c3c1dcd49ee285c1b4f9418bf353367255e",
+      "min_rows": 1
+     },
+     "speculative": {
+      "rounds": 163,
+      "drafted": 354,
+      "accepted": 236,
+      "acceptance_rate": 0.6666666666666666,
+      "tokens_per_round": 2.4539877300613497
+     }
+    },
+    {
+     "wall": 25.099666118621826,
+     "completion": 400,
+     "rounds": 148,
+     "drafted": 359,
+     "accepted": 251,
+     "decode_s": 23.520384426,
+     "tensorfold": {
+      "enable_thinking": true,
+      "reasoning_effort": "xhigh",
+      "engine": "lanes",
+      "tokens_per_second": 16.46953761272627,
+      "seconds": 24.226545358,
+      "prefill_seconds": 0.706160932,
+      "prefill_widths": [
+       39
+      ],
+      "prefill_raised": [],
+      "time_to_first_token": 0.870077643,
+      "sampling": "exact",
+      "drafts": true,
+      "token_sha256": "c97ef2d82cba3104dbffff8d787fef7d0e3a72900f9c2b05e290b1cb37e95115",
+      "min_rows": 1
+     },
+     "speculative": {
+      "rounds": 148,
+      "drafted": 359,
+      "accepted": 251,
+      "acceptance_rate": 0.6991643454038997,
+      "tokens_per_round": 2.7027027027027026
+     }
+    },
+    {
+     "wall": 26.25050640106201,
+     "completion": 400,
+     "rounds": 158,
+     "drafted": 325,
+     "accepted": 242,
+     "decode_s": 23.945645994,
+     "tensorfold": {
+      "enable_thinking": true,
+      "reasoning_effort": "xhigh",
+      "engine": "lanes",
+      "tokens_per_second": 15.950542256125656,
+      "seconds": 25.014823546,
+      "prefill_seconds": 1.069177552,
+      "prefill_widths": [
+       39
+      ],
+      "prefill_raised": [],
+      "time_to_first_token": 1.232940295,
+      "sampling": "exact",
+      "drafts": true,
+      "token_sha256": "d4b4d3aea701f263a4f0fbd8604eba55a3f587333c7da8e7e034b504280c7747",
+      "min_rows": 1
+     },
+     "speculative": {
+      "rounds": 158,
+      "drafted": 325,
+      "accepted": 242,
+      "acceptance_rate": 0.7446153846153846,
+      "tokens_per_round": 2.5316455696202533
+     }
+    },
+    {
+     "wall": 23.930073261260986,
+     "completion": 400,
+     "rounds": 140,
+     "drafted": 327,
+     "accepted": 259,
+     "decode_s": 21.987628259,
+     "tensorfold": {
+      "enable_thinking": true,
+      "reasoning_effort": "xhigh",
+      "engine": "lanes",
+      "tokens_per_second": 17.442067209577377,
+      "seconds": 22.875728846,
+      "prefill_seconds": 0.888100587,
+      "prefill_widths": [
+       39
+      ],
+      "prefill_raised": [],
+      "time_to_first_token": 1.05183805,
+      "sampling": "exact",
+      "drafts": true,
+      "token_sha256": "0f2db20d9ab85920b5d2fab7faac5e7fa3e02f659bdaaf32c5afa421dd9eb5cc",
+      "min_rows": 1
+     },
+     "speculative": {
+      "rounds": 140,
+      "drafted": 327,
+      "accepted": 259,
+      "acceptance_rate": 0.7920489296636085,
+      "tokens_per_round": 2.857142857142857
+     }
+    },
+    {
+     "wall": 25.38974666595459,
+     "completion": 400,
+     "rounds": 150,
+     "drafted": 318,
+     "accepted": 249,
+     "decode_s": 24.156516001,
+     "tensorfold": {
+      "enable_thinking": true,
+      "reasoning_effort": "xhigh",
+      "engine": "lanes",
+      "tokens_per_second": 16.16039717452364,
+      "seconds": 24.689987238,
+      "prefill_seconds": 0.533471237,
+      "prefill_widths": [
+       39
+      ],
+      "prefill_raised": [],
+      "time_to_first_token": 0.697585454,
+      "sampling": "exact",
+      "drafts": true,
+      "token_sha256": "3454608d7a6cafa3c19ebe1383972527a276545466f65cdc3d1a203122f886df",
+      "min_rows": 1
+     },
+     "speculative": {
+      "rounds": 150,
+      "drafted": 318,
+      "accepted": 249,
+      "acceptance_rate": 0.7830188679245284,
+      "tokens_per_round": 2.6666666666666665
+     }
+    }
+   ]
+  ]
+ }
+}

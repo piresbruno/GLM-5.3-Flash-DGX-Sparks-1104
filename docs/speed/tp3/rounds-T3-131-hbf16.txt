@@ -1,0 +1,6 @@
+T3-131-hbf16 structured x1:  102.4 tok/s  tok/round 6.56  round   64.1 ms  drafted/round 5.67  accept 0.98
+T3-131-hbf16 structured x4:  232.3 tok/s  tok/round 6.87  round  118.7 ms  drafted/round 5.95  accept 0.98
+T3-131-hbf16 structured x8:  211.9 tok/s  tok/round 3.93  round  148.7 ms  drafted/round 2.96  accept 0.99
+T3-131-hbf16 prose      x1:   50.0 tok/s  tok/round 2.67  round   53.4 ms  drafted/round 2.53  accept 0.65
+T3-131-hbf16 prose      x4:  102.8 tok/s  tok/round 2.83  round  110.0 ms  drafted/round 2.52  accept 0.72
+T3-131-hbf16 prose      x8:  132.1 tok/s  tok/round 2.65  round  160.5 ms  drafted/round 2.25  accept 0.73

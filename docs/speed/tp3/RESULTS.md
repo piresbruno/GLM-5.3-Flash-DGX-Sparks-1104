@@ -14,6 +14,14 @@ thinking off) and its `--contract`, sparkDash Structured and prose at 1/4/6/8 st
 400 tokens) and prefill 2K-128K, `docs/quality.py`, `docs/seeded.py`, then a second boot with `TF_GLM_PROF=1`.
 Tables are `python3 -I docs/tp3results.py`'s output; every number traces to a file beside this one.
 
+## Third set of legs (2026-11-20, 17:38-18:36 UTC): 1.3.0 with main's patches 0014-0015
+
+Labels `T3-131*`; the table, the per-round probe (`docs/rounds.py`, `rounds-T3-131*.json`) and what they mean are in
+[epic/research-2026-11-gap.md](../../../epic/research-2026-11-gap.md). In short: `longctx` is answered `ok` on 3
+boots of 3 (finding 13 is fixed by 0015); speed is unchanged from the second window (`dec.py` 43.6 / 62.5 / 82.2 /
+130.8, prefill 1,617 at 16K); `HEAD=bf16` is slower (41.1 / 52.9 / 77.1 / 115.4); on sparkDash's Structured prompt a
+round yields 6.8 tokens at 1 and 4 streams and 3.95 at 8, where the 32-row window trims the drafts.
+
 ## Second window (2026-11-20, 13:53-17:01 UTC): TensorFold 1.3.0
 
 Main's stack (`81de26f6` + patches 0001-0013, image `97b32fa9c073`), the same kit, checkpoint and tooling as the first

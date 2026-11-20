@@ -76,6 +76,9 @@ where things stand.
 
 ## Changelog
 
+- docs(epic): research into the gap to the Python engine (`epic/research-2026-11-gap.md`), with a third set of legs:
+  main's patches 0014-0015 fix the 45K prompt; `HEAD=bf16` is slower at TP=3; `docs/rounds.py` reads a round's tokens,
+  drafts and time on either engine; tasks re-ranked (restore 1.3.0's losses, the 64-row window, the round's fixed cost).
 - docs(tp3): the second window on TensorFold 1.3.0 - every check passes, `KDA_PAD` still gains; 1.3.0 is slower than
   the old stack and unstable on a 45K-token prompt (RESULTS.md findings 13-19).
 - merge: main's TensorFold 1.3.0 stack; 0122-0124 dropped (two upstream, one gone), `SAMPLE_ROOT` refused by name.

@@ -29,7 +29,7 @@ unset _cfg_key _cfg_line _cfg_value
 
 # --- pinned engine build (hashed into the image tag with docker/ and patches/engine/*.patch) ----------------------
 TF_REPO="${TF_REPO:-https://github.com/ashhart/TensorFold.git}"
-TF_REF="${TF_REF:-f350cd3ea253a042e205746928271f9d8f71a82d}"
+TF_REF="${TF_REF:-81de26f649677aa72ae0034d4af6e010cd947038}"
 ZIG_VERSION="${ZIG_VERSION:-0.17.0}"
 # sha256 of zig-aarch64-linux-0.17.0.tar.xz (ziglang.org/download/index.json).
 ZIG_SHA256="${ZIG_SHA256:-9e8d11661d4ae3bd57702a3832781e23ad151dde5798e16a5ccd503f65234ff8}"
@@ -257,30 +257,26 @@ KV_SHARD="${KV_SHARD:-0}"
 # stream and nothing measurable at four or eight, token hashes identical. Both ranks must agree (the fingerprint
 # carries it). 0 (default): off, as before.
 L2PF="${L2PF:-0}"
-# KDA_PAD=1 (engine patch 0122, TF_GLM_KDA_PAD, backported from upstream; ./start-tp3.sh only): at three Sparks the KDA
+# KDA_PAD=1 (TF_GLM_KDA_PAD, upstream TensorFold since 1.3.0; ./start-tp3.sh only): at three Sparks the KDA
 # layers' fused input stack is 8,726 / 8,341 columns wide (22 / 21 / 21 heads), not a multiple of eight, so it and
 # f_b / g_b stay bf16 on the generic kernel; the pad gives every rank's stack one eight-aligned width (8,728) so it is
 # packed and tiled like the pair's. A no-op at two and four Sparks. Every rank must agree (the fingerprint carries
-# it). 1 (default since the first TP=3 window, docs/speed/tp3/RESULTS.md): decode +10-17% and prefill +17-19% at TP=3,
+# it). 1 (default since the first TP=3 window, docs/speed/tp3/RESULTS.md, measured as patch 0122 on f350cd3e): decode
+# +10-17% and prefill +17-19% at TP=3,
 # quality held; replies change from bf16 to q8-packed KDA (TP=3's own contract). 0: off.
 KDA_PAD="${KDA_PAD:-1}"
-# ROCE_MULTI=1 (engine patch 0123, TF_GLM_ROCE_MULTI, backported from upstream; ./start-tp3.sh only): the decode and
+# ROCE_MULTI=1 (TF_GLM_ROCE_MULTI, upstream TensorFold since 1.3.0; ./start-tp3.sh only): the decode and
 # verify all-gathers of up to ROCE_MULTI_KB a rank go over fabric/tp's multirank RoCE (a queue pair to every peer, the
 # image's tp_mailbox.fatbin) instead of NCCL, which carries every gather at three Sparks. The wire is lent only when
 # every rank's probe matched NCCL's bytes. ROCE_MULTI_FALLBACK: error (stop when the wire does not open, while it is
-# being qualified) or nccl (go on with NCCL). 0 (default): NCCL carries every exchange. Measured at TP=3
-# (docs/speed/tp3/RESULTS.md): exact, decode +6% at one stream, but prefill 3-6% slower at 4K-16K at every
+# being qualified) or nccl (go on with NCCL). 0 (default): NCCL carries every exchange. Measured at TP=3 as patch 0123
+# on f350cd3e (docs/speed/tp3/RESULTS.md): exact, decode +6% at one stream, but prefill 3-6% slower at 4K-16K at every
 # ROCE_MULTI_KB, so it fails its prefill gate; an opt-in for one-stream use. ROCE_MULTI_KB 128 (default) was its best
 # limit for decode (512: the same prefill cost, 32: less of the decode gain).
 ROCE_MULTI="${ROCE_MULTI:-0}"
 ROCE_MULTI_KB="${ROCE_MULTI_KB:-128}"            # TF_TP_MAILBOX_MAX_KB: verify windows up to 8 rows x 16 KiB; at most 1024
 ROCE_MULTI_FALLBACK="${ROCE_MULTI_FALLBACK:-error}"
-# SAMPLE_ROOT=1 (engine patch 0124, TF_GLM_SAMPLE_ROOT; ./start-tp3.sh only): a verify step's sampled rows, whose
-# draws only rank 0 reads, go to rank 0 alone, one grouped send a follower, instead of a broadcast a row a rank to
-# every rank (24 NCCL calls a round at eight rows and three ranks). Same logits, same draw. Every rank must agree.
-# 0 (default): the broadcasts, as before. Measured at TP=3 (docs/speed/tp3/RESULTS.md): exact (sampled replies off =
-# on), no gain beyond noise at 4 and 8 sampled streams, so it stays off.
-SAMPLE_ROOT="${SAMPLE_ROOT:-0}"
+# SAMPLE_ROOT (engine patch 0124, TF_GLM_SAMPLE_ROOT) is gone with TensorFold 1.3.0: validate_config refuses it by name.
 VISION="${VISION:-1}"                            # --vision: images (rank 0's tower)
 VISION_MAX_IMAGES="${VISION_MAX_IMAGES:-50}"     # --vision-max-images: images per request (engine default 4, at most 64)
 # --chat-template: auto = with VISION=1, templates/glm-5.3-flash-vision.jinja (the checkpoint's own template, whose media

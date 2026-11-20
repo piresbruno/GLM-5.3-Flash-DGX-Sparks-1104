@@ -1,6 +1,6 @@
 # 08 - Patch 0124: sampled rows to rank 0 only
 
-Stage 2. Depends on: 04. Estimate: 2-3 days. Status: measured 2026-11-20: exact (sampled replies off = on), no gain beyond noise at 4 and 8 sampled streams: stays off, per this task's rule (docs/speed/tp3/RESULTS.md).
+Stage 2. Depends on: 04. Estimate: 2-3 days. Status: measured 2026-11-20: exact (sampled replies off = on), no gain beyond noise at 4 and 8 sampled streams: stays off, per this task's rule (docs/speed/tp3/RESULTS.md). 2026-11-20: dropped with TensorFold 1.3.0 (no such switch upstream); `SAMPLE_ROOT=1` is refused by name.
 
 ## Result so far
 

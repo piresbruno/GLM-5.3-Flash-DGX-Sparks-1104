@@ -1,5 +1,8 @@
 # Handoff: TP=3 epic, for the agent resuming on a devbox
 
+**2026-11-20: main moved to TensorFold 1.3.0 and this branch with it** (`epic/README.md`, "TensorFold 1.3.0"): 0122-0124
+are dropped, the TP=3 switches are upstream's, and the first window's numbers are the old stack's.
+
 **On rank 0's Spark? Read [DGX-AGENT.md](DGX-AGENT.md) first: the window's runbook.** The first window's results:
 [docs/speed/tp3/RESULTS.md](../docs/speed/tp3/RESULTS.md).
 
@@ -12,8 +15,8 @@ files in `epic/tasks/`. This file says where things stand and how to resume.
 | Item | State |
 | --- | --- |
 | Recipe branch | `tp3-perf` on the fork `piresbruno/GLM-5.3-Flash-DGX-Sparks-1104` (upstream `MiaAI-Lab/GLM-5.3-Flash-DGX-Sparks-1104`, where the user has read access only). Cut from `main` at `80be4d6`. Holds `epic/`, the TP=3 launcher and patches 0122-0124 |
-| Engine tree | Not on any remote. TensorFold `f350cd3e` plus `patches/engine/*.patch`, rebuilt exactly by `epic/engine-worktree.sh`: tree `e32afdf2d130...` at `recipe-0121`, `dadae63bfc7d...` at `recipe-0122`, `463f5a6660f0...` at `recipe-0124` (checked from upstream) |
-| Task 04 | Done. Host tests at `recipe-0121` already fail 4 + 1 crash (stale tests, listed in the task file): that list is the baseline, not a regression |
+| Engine tree | Not on any remote. Since 2026-11-20 main's stack: TensorFold `81de26f6` (1.3.0) plus `patches/engine/0001-0013`, rebuilt by `epic/engine-worktree.sh` (tag `recipe-0013`). The old stack (`f350cd3e` + 0001-0124, trees `e32afdf2d130...` at `recipe-0121`, `463f5a6660f0...` at `recipe-0124`) is history; this branch carries no engine patch of its own |
+| Task 04 | Done on the old stack (host tests at `recipe-0121`: 4 + 1 stale failures). On 1.3.0 the host-test baseline is to be taken again |
 | Tasks 01, 02 | Done off the Sparks; `bash scripts/tests/run.sh` passes. The kit's `DRY_RUN=1 ./start-tp3.sh` and first LIVE wait for the window |
 | Task 05 | Done 2026-11-20: GPU checks pass at world 3; `KDA_PAD=1` is the TP=3 default (decode +10-17%, prefill +17-19%) |
 | Tasks 07, 08 | Measured 2026-11-20: both exact; 0123 +6% at one stream but prefill -3-6% (off, `ROCE_MULTI_KB=128`); 0124 no gain (off) |
@@ -27,8 +30,7 @@ git clone git@github.com:piresbruno/GLM-5.3-Flash-DGX-Sparks-1104.git recipe && 
 git switch tp3-perf
 git remote add upstream https://github.com/MiaAI-Lab/GLM-5.3-Flash-DGX-Sparks-1104.git
 epic/engine-worktree.sh ../tf-tp3         # full TensorFold clone; the backports need its main branch
-git -C ../tf-tp3 log --oneline -1 recipe-0121
-git -C ../tf-tp3 rev-parse 'recipe-0121^{tree}'   # expect e32afdf2d130...
+git -C ../tf-tp3 log --oneline -1 recipe-0013     # TensorFold 81de26f6 + main's 13 patches
 ```
 
 ## Host tests on a devbox
@@ -64,10 +66,11 @@ drafter-MLP edit (equivalent to patch 0109). They are close, not exact, in `reci
 - **Public fork.** No addresses, ssh users or host names of the kit in committed files. Kit details are in rank 0's
   untracked `scripts/local.sh`; ask the user.
 - **`./start.sh` is not modified.** TP=3 comes from the ring launcher (task 01).
-- **Engine changes ship as numbered patch files** `patches/engine/0122+`, each env-gated and off by default in the
-  engine; `scripts/tests/patch-numbers.sh` must pass. Export with `git format-patch -1 --start-number N`.
-- **Settings and fingerprint layout is 20** on this stack (0122 set 18, 0123 19, 0124 20): new fields take 21, ...
-  Upstream's own layout numbers do not transfer.
+- **Engine changes ship as numbered patch files** after main's (`patches/engine/0014+` on the 1.3.0 stack), each
+  env-gated and off by default in the engine; `scripts/tests/patch-numbers.sh` must pass, and the stack must apply
+  (that test does not check it: `epic/engine-worktree.sh` does). Export with `git format-patch -1 --start-number N`.
+- **Settings and fingerprint layout is 22** on the 1.3.0 stack (`cuda_ranks.zig`, with main's 0013): new fields take 23.
+  The old stack's 17-20 do not transfer.
 - **Gates:** TP=3 needs its own baselines (TP=2 hashes are not a gate there); a switched-off patch leaves TP=2 replies
   byte-identical. The full list is in `epic/README.md`.
 - **Commits:** end messages with the attribution line the session gives; push to the `fork` remote only. The user

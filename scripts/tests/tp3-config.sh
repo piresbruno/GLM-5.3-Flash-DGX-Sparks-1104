@@ -22,8 +22,8 @@ check() { # check <name> <want: accepted|refused:<text the refusal holds>> [VAR=
   env -i PATH="$PATH" HOME="$HOME" GLM_TPN=1 TP=3 WORKER=a@spark-b WORKER2=a@spark-c "$@" bash -c '
     source scripts/prepare.sh
     validate_config >/dev/null
-    printf "%s %s %s %s %s %s %s %s" "$PREFILL_REDUCE" "$NCCL_CHANNELS" "$HEAD" "$PROMPT_CACHE_GIB" "$TP3_NCCL" \
-      "$KDA_PAD" "$ROCE_MULTI:$ROCE_MULTI_KB" "$SAMPLE_ROOT" >&2' 2>"$err" && rc=0 || rc=$?
+    printf "%s %s %s %s %s %s %s" "$PREFILL_REDUCE" "$NCCL_CHANNELS" "$HEAD" "$PROMPT_CACHE_GIB" "$TP3_NCCL" \
+      "$KDA_PAD" "$ROCE_MULTI:$ROCE_MULTI_KB" >&2' 2>"$err" && rc=0 || rc=$?
   if (( rc == 0 )); then got="accepted"
   elif grep -q 'E_CONFIG' "$err"; then got="refused:$(grep -m1 E_CONFIG "$err")"
   else got="error $rc: $(head -1 "$err")"; fi
@@ -36,8 +36,8 @@ check() { # check <name> <want: accepted|refused:<text the refusal holds>> [VAR=
   fi
   rm -f -- "$err"
 }
-check 'the defaults (split, 8 channels, q8 head, 12 GiB cache, eager NCCL, KDA pad on, RoCE off at 128 KB, sampler off)' \
-  'accepted:split 8 q8 12 eager 1 0:128 0'
+check 'the defaults (split, 8 channels, q8 head, 12 GiB cache, eager NCCL, KDA pad on, RoCE off at 128 KB)' \
+  'accepted:split 8 q8 12 eager 1 0:128'
 check 'WORKER3 is not needed' accepted WORKER3=
 check 'PREFILL_REDUCE=gather' accepted PREFILL_REDUCE=gather
 check 'WORKER_WEIGHTS=rsync' accepted WORKER_WEIGHTS=rsync
@@ -53,13 +53,13 @@ check 'TP=5 is refused' 'refused:TP=5' TP=5
 check 'KDA_PAD=1' accepted KDA_PAD=1
 check 'KDA_PAD=on is refused' refused:KDA_PAD KDA_PAD=on
 check 'ROCE_MULTI=1' accepted ROCE_MULTI=1
-check 'SAMPLE_ROOT=1' accepted SAMPLE_ROOT=1
+check 'SAMPLE_ROOT=1 is refused by name (gone with TensorFold 1.3.0)' 'refused:SAMPLE_ROOT is gone' SAMPLE_ROOT=1
 check 'SAMPLE_ROOT=yes is refused' refused:SAMPLE_ROOT SAMPLE_ROOT=yes
 check 'ROCE_MULTI_KB=2048 is refused' refused:ROCE_MULTI_KB ROCE_MULTI_KB=2048
 check 'ROCE_MULTI_FALLBACK=warn is refused' refused:ROCE_MULTI_FALLBACK ROCE_MULTI_FALLBACK=warn
 # four Sparks beside it: WORKER3 required, split and rsync refused, FP8 accepted
 check 'four: WORKER3 required' refused:WORKER3 TP=4 WORKER_WEIGHTS=nfs
-check 'four: defaults with nfs' 'accepted:gather 4 bf16 8 eager 1 0:128 0' TP=4 WORKER3=a@spark-d WORKER_WEIGHTS=nfs
+check 'four: defaults with nfs' 'accepted:gather 4 bf16 8 eager 1 0:128' TP=4 WORKER3=a@spark-d WORKER_WEIGHTS=nfs
 check 'four: split refused' 'refused:PREFILL_REDUCE' TP=4 WORKER3=a@spark-d WORKER_WEIGHTS=nfs PREFILL_REDUCE=split
 check 'four: rsync refused' 'refused:rsync' TP=4 WORKER3=a@spark-d
 check 'four: GLM_TP4=1 still names the four-Spark start' accepted GLM_TPN= GLM_TP4=1 TP=4 WORKER3=a@spark-d WORKER_WEIGHTS=nfs

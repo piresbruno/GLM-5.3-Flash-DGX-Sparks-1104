@@ -38,7 +38,7 @@ OUT = os.environ.get("DEC_OUT") or os.path.join(os.path.dirname(os.path.abspath(
 # context. The filler is seeded, so it is byte-identical across legs and stays comparable.
 CTXWORDS = int(os.environ.get("CTXWORDS", "0"))
 # The sweep's sampler (the contract stays greedy): DEC_TEMPERATURE 0 (default) is greedy; above 0 the sweep samples at
-# that temperature with DEC_TOP_K and a fixed seed, for legs whose switch acts on sampled rows (TF_GLM_SAMPLE_ROOT).
+# that temperature with DEC_TOP_K and a fixed seed, for legs whose switch acts on sampled rows.
 SWEEP_TEMPERATURE = float(os.environ.get("DEC_TEMPERATURE", "0"))
 SWEEP_TOP_K = int(os.environ.get("DEC_TOP_K", "20"))
 

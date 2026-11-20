@@ -1,6 +1,6 @@
 # 07 - Patch 0123: `TF_GLM_ROCE_MULTI`
 
-Stage 2. Depends on: 04. Estimate: 2-3 days, then one window. Status: measured 2026-11-20: `tf-tp-test suite` passes on the triangle and the wire is exact, decode +6% at one stream, but prefill 3-6% slower at every `ROCE_MULTI_KB`: off by default, `ROCE_MULTI_KB=128` (docs/speed/tp3/RESULTS.md). The prompt-path cost to find.
+Stage 2. Depends on: 04. Estimate: 2-3 days, then one window. Status: measured 2026-11-20: `tf-tp-test suite` passes on the triangle and the wire is exact, decode +6% at one stream, but prefill 3-6% slower at every `ROCE_MULTI_KB`: off by default, `ROCE_MULTI_KB=128` (docs/speed/tp3/RESULTS.md). The prompt-path cost to find. 2026-11-20: the switch is upstream in TensorFold 1.3.0; patch 0123 dropped (re-measure, prefill above all).
 
 ## Result so far
 

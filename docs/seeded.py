@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Fixed-seed sampled replies, for TF_GLM_SAMPLE_ROOT's gate (epic task 08): equal with the switch off and on.
+"""Fixed-seed sampled replies, for a sampler change's gate (as TF_GLM_SAMPLE_ROOT's, epic task 08): equal off and on.
 
   python3 -I docs/seeded.py <label> <outdir>
 

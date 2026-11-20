@@ -83,7 +83,7 @@ validate_config() {
     || fail E_CONFIG 'KV_SHARD=1 needs KV=fp8, KV_PAGES=on, DRAFTER=dflash2 or none, and PARALLEL=auto or above 1.'
   [[ "$L2PF" =~ ^[01]$ ]] || fail E_CONFIG 'L2PF must be 0 or 1 (TF_GLM_L2PF).'
   [[ "$KDA_PAD" =~ ^[01]$ ]] || fail E_CONFIG 'KDA_PAD must be 0 or 1 (TF_GLM_KDA_PAD).'
-  [[ "$SAMPLE_ROOT" =~ ^[01]$ ]] || fail E_CONFIG 'SAMPLE_ROOT must be 0 or 1 (TF_GLM_SAMPLE_ROOT).'
+  [[ "${SAMPLE_ROOT:-0}" == 0 ]] || fail E_CONFIG 'SAMPLE_ROOT is gone: engine patch 0124 (TF_GLM_SAMPLE_ROOT) was dropped with TensorFold 1.3.0, which has no such switch (it was exact and gained nothing at TP=3; docs/speed/tp3/RESULTS.md). Unset it.'
   [[ "$ROCE_MULTI" =~ ^[01]$ ]] || fail E_CONFIG 'ROCE_MULTI must be 0 or 1 (TF_GLM_ROCE_MULTI).'
   [[ "$ROCE_MULTI_KB" =~ ^[0-9]+$ ]] && (( ROCE_MULTI_KB >= 4 && ROCE_MULTI_KB <= 1024 )) \
     || fail E_CONFIG 'ROCE_MULTI_KB must be 4 to 1024 (TF_TP_MAILBOX_MAX_KB: a RoCE write is capped at 1 MiB).'

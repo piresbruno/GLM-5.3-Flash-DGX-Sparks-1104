@@ -1,6 +1,6 @@
 # 05 - Patch 0122: `TF_GLM_KDA_PAD`
 
-Stage 1. Depends on: 04. Estimate: 1-2 days, then one window. Status: done 2026-11-20: GPU checks pass at world 3; `KDA_PAD=1` is the TP=3 default (decode +10-17%, prefill +17-19%, quality held; docs/speed/tp3/RESULTS.md). **The largest single gain in the epic.**
+Stage 1. Depends on: 04. Estimate: 1-2 days, then one window. Status: done 2026-11-20: GPU checks pass at world 3; `KDA_PAD=1` is the TP=3 default (decode +10-17%, prefill +17-19%, quality held; docs/speed/tp3/RESULTS.md). **The largest single gain in the epic.** 2026-11-20: the switch is upstream in TensorFold 1.3.0; patch 0122 dropped, `KDA_PAD=1` now drives upstream's code (re-measure on 1.3.0).
 
 ## Result so far
 

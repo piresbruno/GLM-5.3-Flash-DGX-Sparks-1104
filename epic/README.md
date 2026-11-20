@@ -1,6 +1,34 @@
 # Epic: TP=3 on three Sparks, faster than TP=2 and on a par with the Python engine
 
-Branch: `tp3-perf` (from `main` at `80be4d6`, 121 engine patches). Status: **in progress** (2026-11-19: tasks 01, 02, 04 done off the Sparks; patches 0122-0124 written and host-tested, their window to come). Resuming elsewhere: read [HANDOFF.md](HANDOFF.md).
+Branch: `tp3-perf` (from `main` at `80be4d6`; since 2026-11-20 on main's TensorFold 1.3.0 stack, `81de26f6` + patches
+0001-0013). Status: **in progress** (2026-11-20: the first window measured patches 0122-0124 on the old stack; then
+main moved to TensorFold 1.3.0, which carries 0122's and 0123's switches itself: see "TensorFold 1.3.0" below).
+Resuming elsewhere: read [HANDOFF.md](HANDOFF.md).
+
+## TensorFold 1.3.0 (main, 2026-11-20): what changed for this epic
+
+Main moved `TF_REF` from `f350cd3e` to `81de26f6` (TensorFold 1.3.0, ~4,300 upstream commits) and its engine stack from
+121 patches to 13 (0001-0013); this branch merged it and dropped its own 0122-0124.
+
+- **0122 `TF_GLM_KDA_PAD` and 0123 `TF_GLM_ROCE_MULTI` are upstream** (every commit they ported is in `81de26f6`), with
+  the same names and rules (`KDA_PAD` needs `TF_GLM_MM`, on by default; `ROCE_MULTI` takes the same `TF_TP_*`). The
+  launcher's `KDA_PAD=1` (the TP=3 default) and `ROCE_MULTI` now drive upstream's code. 0122's recipe-only `chainSegs`
+  fix has no counterpart to carry: that path came from the recipe's old shared-window patches, and upstream's KDA chain
+  strides by the padded width (`cuda_kda_block.zig`).
+- **0124 `TF_GLM_SAMPLE_ROOT` is gone** (no such switch upstream; it did not apply to the new stack and gained nothing):
+  `SAMPLE_ROOT=1` is refused by name.
+- **Also gone or no-ops on 1.3.0** (no engine reads them): `TF_GLM_DFLASH2_COUPLED`, `TF_GLM_DRAFT_RULE` (tasks 03/06's
+  draft legs), `TF_GLM_ABSORB_MMA`, `TF_GLM_W8A8`, `TF_GLM_CE_EXCHANGE`, `TF_PROMPT_CACHE_FIRST` (main's launchers still
+  pass them; upstream says the first three behaviours are built in), and `TF_ROCE_RING` (four Sparks on a ring lose
+  their RoCE relay: main's concern). `TF_GLM_CHUNK_SOLO` takes 2048 or 4096; `TF_GLM_DRAFT_CONFIDENCE` remains.
+- **New in 1.3.0:** programmatic dependent launches for GLM's kernels and decode linears (`TF_GLM_PDL`, on), which cut
+  launch gaps between decode steps: the host gap of tasks 12-13 has to be re-profiled before those tasks are planned.
+  The shared verify window is still 32 rows (`shared_rows`), so task 10 stands.
+- **Every number in [docs/speed/tp3/RESULTS.md](../docs/speed/tp3/RESULTS.md) is the old stack's** (`f350cd3e` + 124
+  patches). On 1.3.0 the TP=2 and TP=3 contracts, T2, T3 and the patch legs are to be measured again (the next window:
+  DGX-AGENT.md), with the GPU checks of the pad at world 3 (`glm-lanes-concurrent` above all) and `tf-tp-test suite`.
+- A plain merge of a stack change can leave patches that no longer apply and still pass `scripts/tests/run.sh`
+  (`patch-numbers.sh` checks numbers, not that the stack applies): the image build is where it fails.
 
 ## Why
 
@@ -98,8 +126,9 @@ Caveats: the table's forward times are inferred on the older stack; the measured
 - **The three Sparks serve production** on the Python-engine recipe. Every measurement session is a maintenance window
   agreed with the owner beforehand; restore that service and check `/health` at the end of each session.
 - `./start.sh` (the production pair) is not modified.
-- Engine changes ship as new numbered patches `patches/engine/0122+`, built from a fresh engine worktree at `f350cd3e`
-  plus the 121 patches ([04](tasks/04-engine-worktree-and-patch-workflow.md)).
+- Engine changes ship as new numbered patches after main's (`patches/engine/0014+` on the 1.3.0 stack), built from a
+  fresh engine worktree at the recipe's `TF_REF` plus main's patches (`epic/engine-worktree.sh`,
+  [04](tasks/04-engine-worktree-and-patch-workflow.md)).
 - Committed files carry no kit-private details (addresses, ssh users, host names): this branch is public.
 
 ## Gates (every engine task)
@@ -109,7 +138,7 @@ Caveats: the table's forward times are inferred on the older stack; the measured
 - `docs/quality.py` NLL and answers within the TP=3 q8 reference (0.7597 / `639c916612ba` on the old stack; re-taken in
   [03](tasks/03-baselines-and-settings-legs.md)).
 - A patch whose switch is off leaves TP=2 replies byte-identical (contract hashes against the image before it).
-- All patches apply to `f350cd3e` with no rejects; the clean build prints no compiler warning (0115's standard).
+- All patches apply to the recipe's `TF_REF` with no rejects; the clean build prints no compiler warning.
 - A gain counts when it clears the leg's noise (two boots, or 2x the run-to-run spread).
 
 ## Stages and tasks
@@ -125,7 +154,7 @@ Caveats: the table's forward times are inferred on the older stack; the measured
 | [07](tasks/07-patch-0123-roce-multi.md) | Patch 0123: `TF_GLM_ROCE_MULTI` | 2 | 04 | 2-3 d + window | measured: exact, +6% x1, prefill -3-6%: off (prompt-path cost to find) |
 | [08](tasks/08-patch-0124-sampler-rows-to-rank0.md) | Patch 0124: sampled rows to rank 0 only | 2 | 04 | 2-3 d | measured: exact, no gain: off |
 | [09](tasks/09-checkpoint-a.md) | Checkpoint A: bar 1 | 2 | 05-08 | 1 window | todo |
-| [10](tasks/10-patch-0125-64-row-window.md) | Patch 0125: 64-row shared verify window | 3 | 09 | 1-2 w | todo |
+| [10](tasks/10-patch-0125-64-row-window.md) | Patch (0014+ on 1.3.0): 64-row shared verify window | 3 | 09 | 1-2 w | todo |
 | [11](tasks/11-checkpoint-b.md) | Checkpoint B: bar 2 at 4/6/8 streams; go / no-go for 12-14 | 3 | 10 | 1 window | todo |
 | [12](tasks/12-patch-verify-graph-lone.md) | Patch: CUDA-graph replay of the lone verify forward | 4 | 11 | ~2 w | todo |
 | [13](tasks/13-patch-verify-graph-shared.md) | Patch: graph replay for shared windows | 4 | 12 | 2-3 w | todo |

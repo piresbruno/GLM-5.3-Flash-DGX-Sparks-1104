@@ -10,7 +10,10 @@ where things stand.
 ## What changed
 
 - `./start-tp3.sh` and `./stop-tp3.sh` over the four-Spark ring launcher at `TP=3`.
-- Engine patches 0122 (`TF_GLM_KDA_PAD`), 0123 (`TF_GLM_ROCE_MULTI`) and 0124 (`TF_GLM_SAMPLE_ROOT`), each off by
+- Main's TensorFold 1.3.0 (`81de26f6`, patches 0001-0013) merged in on 2026-11-20. The branch's own engine patches are
+  dropped: 0122 (`TF_GLM_KDA_PAD`) and 0123 (`TF_GLM_ROCE_MULTI`) are upstream in 1.3.0, so `KDA_PAD` and `ROCE_MULTI`
+  now drive upstream's code; 0124 (`TF_GLM_SAMPLE_ROOT`) has no counterpart and `SAMPLE_ROOT=1` is refused by name.
+- Before 1.3.0 (measured in the first window): engine patches 0122, 0123 and 0124, each off by
   default and passed by the start at `TP=3` only.
 - `epic/`: the plan, the task files, the devbox handoff and the runbook for rank 0's Spark.
 - The first maintenance window (2026-11-19/20) measured every leg of task 03 and the three patches on the three
@@ -36,6 +39,9 @@ where things stand.
 
 ## Edge cases handled
 
+- Merging main's new stack left 0122-0124 behind with no conflict and every test passing, though none applies to 1.3.0
+  (`patch-numbers.sh` checks numbers only): they were removed in the merge itself, and the documents say so.
+
 - `tp3-config.sh` on a kit: rank 0's `local.sh` set `NCCL_CHANNELS=8`, which made the four-Spark default check read 8
   instead of 4. The sandbox copies `scripts/` without `local.sh` and links the rest of the repository.
 - The first `DRY_RUN=1 ./start-tp3.sh` on the kit stopped after the links with `!v: unbound variable`: a `local WORKER`
@@ -56,6 +62,7 @@ where things stand.
   `PREFILL_REDUCE=gather`; a TP=3 cost refit for the tpm draft rule; the TP=2 gate's reference
   (`contract-up-base.json`, not `contract-baseline.json`).
 - README and CHANGELOG for three Sparks: task 16 (ship).
+- The second window: T2, T3 and the switches again on 1.3.0, with the GPU checks of the pad at world 3.
 
 ## Verification
 
@@ -68,6 +75,7 @@ where things stand.
 
 ## Changelog
 
+- merge: main's TensorFold 1.3.0 stack; 0122-0124 dropped (two upstream, one gone), `SAMPLE_ROOT` refused by name.
 - feat(tp3): the first window's results; `KDA_PAD=1` the TP=3 default, `ROCE_MULTI_KB=128`; window tooling; milestone M.
 - fix(docker): `tf-tp-test` embeds the mailbox kernel the server loads, so its RoCE suite runs at TP=3.
 - fix(tp3): `./start-tp3.sh`'s weights step reads rank 1's ssh target before the local `WORKER` shadows it.

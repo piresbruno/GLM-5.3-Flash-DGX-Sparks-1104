@@ -115,7 +115,7 @@ ARG STRIP=false
 # tf-tp-watch-check. It costs ~4 more minutes (tf-cuda-test is the longest Zig compile).
 ARG TOOLS=1
 ARG PREFIX=/opt/tensorfold
-# fabric/tp's mailbox kernel for TF_GLM_ROCE_MULTI=1 (engine patch 0123; three ranks or more), built before the Zig
+# fabric/tp's mailbox kernel for TF_GLM_ROCE_MULTI=1 (TensorFold's multirank RoCE; three ranks or more), built before the Zig
 # build: the server loads it from TF_TP_KERNEL_IMAGE, and `zig build install` embeds the same file in tf-tp-test
 # (-Dtp-fatbin), whose `suite` on TF_COMM_BACKEND=roce refuses to run without one. The flags are zig/build/tp.zig's.
 RUN mkdir -p "${PREFIX}/lib" \

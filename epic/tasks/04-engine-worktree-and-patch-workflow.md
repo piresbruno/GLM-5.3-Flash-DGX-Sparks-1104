@@ -1,6 +1,6 @@
 # 04 - Engine worktree and patch workflow
 
-Stage 1. Depends on: nothing. Estimate: half a day. Status: done 2026-11-19 (devbox, x86_64, no GPU).
+Stage 1. Depends on: nothing. Estimate: half a day. Status: done 2026-11-19 (devbox, x86_64, no GPU). 2026-11-20: main's TensorFold 1.3.0 stack replaces `recipe-0121`; `epic/engine-worktree.sh` follows `TF_REF`.
 
 ## Result
 

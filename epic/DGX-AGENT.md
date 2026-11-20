@@ -26,16 +26,18 @@ has the longer background.
 
 ## What is on the branch (all off by default)
 
+The second window runs on **main's TensorFold 1.3.0 stack** (`81de26f6` + patches 0001-0013; `epic/README.md`,
+"TensorFold 1.3.0"). This branch carries no engine patch of its own any more: the TP=3 switches are upstream's.
+
 | Piece | What | Switch (recipe / engine) | State |
 | --- | --- | --- | --- |
-| Launcher | `./start-tp3.sh`, `./stop-tp3.sh` over the four-Spark scripts at `TP=3`; triangle or switch found from the links | `TP3_NCCL=eager` (default) or `ring` | offline tests pass; never run on the kit |
-| 0122 | `TF_GLM_KDA_PAD`: the KDA input stack padded to one 8-aligned width (8,728) so it is packed and tiled at 22/21/21 heads; recipe-only `chainSegs` stride bug fixed | `KDA_PAD=1` / `TF_GLM_KDA_PAD=1` | host tests only |
-| 0123 | `TF_GLM_ROCE_MULTI`: small all-gathers on fabric/tp's multirank RoCE, lent only if every rank's probe equals NCCL's | `ROCE_MULTI=1` (+ `ROCE_MULTI_KB=512`, `ROCE_MULTI_FALLBACK=error`) | host tests only; the image now builds `/opt/tensorfold/lib/tp_mailbox.fatbin` |
-| 0124 | `TF_GLM_SAMPLE_ROOT`: a verify step's sampled rows to rank 0 in one grouped send a follower, instead of a broadcast a row a rank | `SAMPLE_ROOT=1` / `TF_GLM_SAMPLE_ROOT=1` | host tests only |
+| Launcher | `./start-tp3.sh`, `./stop-tp3.sh` over the four-Spark scripts at `TP=3`; triangle or switch found from the links | `TP3_NCCL=eager` (default); `ring` does not start (RESULTS.md finding 12) | LIVE on the kit (first window, old stack) |
+| KDA pad | upstream `TF_GLM_KDA_PAD` (was patch 0122): the KDA input stack padded to one 8-aligned width | `KDA_PAD=1` (**the TP=3 default**) | measured on the old stack: decode +10-17%, prefill +17-19%; re-measure on 1.3.0 |
+| Multirank RoCE | upstream `TF_GLM_ROCE_MULTI` (was patch 0123): small all-gathers on fabric/tp's multirank RoCE | `ROCE_MULTI=1` (off; `ROCE_MULTI_KB=128`, `ROCE_MULTI_FALLBACK=error`) | measured on the old stack: exact, +6% x1, prefill -3-6%; re-measure on 1.3.0 |
+| `tf-tp-test` | the image embeds the mailbox kernel the server loads (`-Dtp-fatbin`) | - | `tf-tp-test suite` passed on the triangle (old stack) |
 
-The engine switches are passed by the start at `TP=3` only. Settings and fingerprint layout is 20 (new fields: 21+).
-Host tests already fail five stale tests at the untouched `recipe-0121` tree (listed in task 04); the same five are
-the baseline, not a regression.
+`SAMPLE_ROOT` (was patch 0124) is gone with 1.3.0 and refused by name. The first window's numbers
+(`docs/speed/tp3/RESULTS.md`) are the old stack's: this window takes them again on 1.3.0.
 
 ## Before the window (no Sparks touched)
 
@@ -58,37 +60,37 @@ path). Ask the user for anything missing; do not guess the kit's addresses.
 2. **Read-only first:** `DRY_RUN=1 ./start-tp3.sh`. Expect three ranks, `A triangle: ...` with each rank's devices
    toward each peer, `TF_GLM_WORLD=3`, the eager NCCL set, and nothing written. If it says `switch` or stops with
    `E_FABRIC`, stop and report the lines to the user.
-3. **First start** (it builds the 124-patch image on this Spark, ~6 min, and sends it to the workers):
-   `./start-tp3.sh`. Check the build log for compiler warnings (patch 0115's standard: none), then LIVE and its smoke
-   test. Rank 0's startup line: linears packed (179 without the pad is expected here).
+3. **First start** (it builds the 1.3.0 image on this Spark, ~10 min, and sends it to the workers):
+   `./start-tp3.sh` (with `KDA_PAD=1`, the default). Check the build log for compiler warnings (none), then LIVE and
+   its smoke test. Rank 0's startup line: linears packed (the old stack read 282 with the pad, 180 without).
 4. **GPU checks in the image** (`/opt/tensorfold/bin/tf-cuda-test`, `tf-tp-test`), with the server stopped
    (`./stop-tp3.sh`):
-   - `tf-cuda-test glm-kda-pad-split` (one GPU, synthetic);
-   - `tf-cuda-test glm-shared-check`, `glm-pair-check`, `glm-lanes-concurrent` (`<ckpt> <dc.json> <rank> <world>
-     <idfile>`) at world 3 with `TF_GLM_KDA_PAD=1`, one per Spark;
+   - the GPU checks 1.3.0 has for the pad at world 3 (`tf-cuda-test` with no argument lists them; the old stack's were
+     `glm-kda-pad-split`, `glm-shared-check`, `glm-pair-check`, `glm-lanes-concurrent`, `<ckpt> <dc.json> <rank>
+     <world> <idfile>`, one per Spark). `dc.json`: prompts of 2.6K-5.2K tokens, or the chunk-at-a-time cases never
+     run (RESULTS.md finding 1); the first window's runner and `dc.json` are in rank 0's untracked
+     `logs/window-2026-11-19/`;
    - `tf-tp-test suite` on the triangle before any `ROCE_MULTI=1` leg (bytes equal NCCL's at every size).
-5. **Task 03's legs** (`TP=3 docs/leg.sh <label> KEY=VALUE ...`: it restarts through `docs/safestart.sh`, writes
-   `docs/speed/tp3/`). T2 (the pair, `./start.sh`) and T3 (all switches off) first: T3's contract becomes
-   `docs/speed/tp3/contract-baseline.json`. Then the settings legs in task 03's table.
-6. **The patches, one leg each, then together:** `KDA_PAD=1`, `ROCE_MULTI=1`, `SAMPLE_ROOT=1`, then all three. Same
-   measurement set as task 03 (sparkDash Structured and prose at 1/4/6/8, prefill, `dec.py`, `--contract`,
-   `quality.py`, `TF_GLM_PROF=1` per rank).
+5. **Baselines on 1.3.0** (`docs/tp3leg.sh <label> KEY=VALUE ...`: a whole leg, files under `docs/speed/tp3/`; give
+   the labels a suffix, e.g. `T3-130`, so the first window's files stay). T2 (`TP=2`, the pair) and T3 (`KDA_PAD=0`,
+   every switch off) first, then T3 again on a second boot. T3's contract on 1.3.0 replaces
+   `docs/speed/tp3/contract-baseline.json`.
+6. **The switches:** `KDA_PAD=1` (the default), then `KDA_PAD=1 ROCE_MULTI=1` (and its prefill against `KDA_PAD=1`
+   alone, at 4K-16K above all). The draft settings of task 03 that remain on 1.3.0 (`TF_GLM_DRAFT_CONFIDENCE`, `L2PF`,
+   `TF_GLM_CHUNK_SOLO=4096 TF_GLM_OVERLAP_PIECES=8`) only if time allows.
 7. **End:** `./stop-tp3.sh` (archives three logs), `systemctl --user start glm53-tensorfold.service`, check `/health`
    and one reply. Tell the user it is back.
 
 ## Gates per patch (from `epic/README.md`)
 
-- **0122:** replies differ from T3 (q8 packed instead of bf16; expected) but are repeatable (`--contract` twice),
-  drafts on = drafts off, solo = concurrent, and `quality.py` within the TP=3 reference. Rank 0's startup line says
-  281 linears packed. KDA per forward near TP=4's share (~7-8 ms a 2-row forward). Concurrent streams are the case
-  the `chainSegs` fix is about: check them explicitly.
-- **0123:** contract hashes identical to the same image with it off; gathers down in the per-rank profile; decode up
+- **`KDA_PAD`:** replies differ from T3 (q8 packed instead of bf16; expected) but are repeatable (`--contract` twice),
+  drafts on = drafts off, solo = concurrent, and `quality.py` within the TP=3 reference. KDA per forward near TP=4's
+  share (~7-8 ms a 2-row forward; 9.3 ms on the old stack). Concurrent streams with long prompts: check explicitly.
+- **`ROCE_MULTI`:** contract hashes identical to the same image with it off; gathers down in the per-rank profile; decode up
   beyond noise; prefill not worse than 1-2%. With `ROCE_MULTI_FALLBACK=error` a wire that does not open stops the
   start: report its lines rather than switching to `nccl` silently.
-- **0124:** a fixed seed's sampled replies identical with it off and on (TP=3, and TP=2 if time allows); the sampler
-  section's time down at 4 and 8 sampled streams, or the patch is dropped.
-- **Every patch, switch off:** TP=2 (`./start.sh` on the new image) contract hashes equal to
-  `docs/speed/contract-baseline.json`.
+- **TP=2:** T2 on 1.3.0 is the pair's new reference (main's stack changed the pair's replies before: RESULTS.md
+  finding 6); the TP=3 switches do not reach `./start.sh`.
 - A gain counts when it clears the leg's noise (two boots, or 2x the run-to-run spread).
 
 ## Write back
@@ -96,7 +98,7 @@ path). Ask the user for anything missing; do not guess the kit's addresses.
 `docs/speed/tp3/RESULTS.md` (a table per leg, the per-rank profile table, findings), the legs' JSON, the task files'
 status lines, and `epic/README.md`'s "Where it should land" with measured numbers. A patch that passes its gates:
 set its recipe default to 1 at `TP=3` in `scripts/config.sh` (`KDA_PAD`, `ROCE_MULTI` with
-`ROCE_MULTI_FALLBACK=nccl`, `SAMPLE_ROOT`). Before committing, `SCRUB_HOSTS=<the kit's host names> python3 -I
+`ROCE_MULTI_FALLBACK=nccl`). Before committing, `SCRUB_HOSTS=<the kit's host names> python3 -I
 docs/scrub.py docs/speed/` (leg logs carry ssh targets, sparkDash files the unit's host name). Commit (end each
 message with the session's attribution line) and push to the fork only (on rank 0's clone the fork is the `fork`
 remote and `origin` is `MiaAI-Lab`); the user opens PRs against `MiaAI-Lab`.
@@ -105,5 +107,5 @@ remote and `origin` is `MiaAI-Lab`); the user opens PRs against `MiaAI-Lab`.
 
 - A rank exits at start: `logs/current/rank*.log`; `./stop-tp3.sh` archives them. A fingerprint mismatch names the
   setting that differs between ranks.
-- The engine tree for edits is rebuilt anywhere with `epic/engine-worktree.sh <dir>` (tag `recipe-0124`, tree
-  `463f5a66...`); host tests as in `HANDOFF.md`. Do not build on the Sparks outside the window.
+- The engine tree for edits is rebuilt anywhere with `epic/engine-worktree.sh <dir>` (the recipe's `TF_REF` plus
+  main's 0001-0013, tag `recipe-0013`); host tests as in `HANDOFF.md`. Do not build on the Sparks outside the window.

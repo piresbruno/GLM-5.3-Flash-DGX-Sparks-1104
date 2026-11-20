@@ -1,5 +1,11 @@
 # TP=3 results: the first maintenance window (2026-11-19/20)
 
+> **Stack:** every number here is TensorFold `f350cd3e` + patches 0001-0124. On 2026-11-20 main moved to TensorFold 1.3.0
+> (`81de26f6` + 0001-0013), which carries `TF_GLM_KDA_PAD` and `TF_GLM_ROCE_MULTI` itself and has no
+> `TF_GLM_SAMPLE_ROOT`, coupled drafts or tpm rule; this branch followed it (`epic/README.md`, "TensorFold 1.3.0").
+> These results are the reference for that stack and the reason for the defaults; the 1.3.0 numbers come from the next
+> window.
+
 Task 03's baselines and settings legs and the patch legs of tasks 05, 07 and 08, measured on the three Sparks (a
 triangle: every pair on its own ConnectX-7 cable) on one image, `tensorfold-glm53-spark:52252c5da214` (TensorFold
 `f350cd3e` + patches 0001-0124; `tf-tp-test` with the mailbox kernel). Every leg ran through `docs/tp3leg.sh` (or
